@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nagamas Aquaculture Sdn Bhd — Farm Log (Back End)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #E7F1FB;
+    --panel: #FFFFFF;
+    --panel-alt: #EAF3FC;
+    --line: #D2E3F3;
+    --ink: #123A5E;
+    --ink-soft: #3E6690;
+    --ink-faint: #90A9C4;
+    --good: #2F7A64;
+    --warn: #B9791A;
+    --crit: #AE423B;
+    --water: #2E7EB0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    padding:24px 20px 64px;
+    min-height:100vh;
+  }
+  .wrap{max-width:1280px;margin:0 auto;}
+
+  .top-nav{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;}
+  .brand{font-family:'Fraunces', serif; font-weight:500; font-size:16px; color:var(--ink-soft);}
+  .nav-link{
+    font-family:'Inter', sans-serif; font-weight:600; font-size:13px; padding:8px 16px; border-radius:20px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); cursor:pointer; text-decoration:none;
+  }
+  .nav-link:hover{background:var(--panel-alt);}
+  .sync-status{font-family:'IBM Plex Mono', monospace; font-size:11.5px; padding:6px 4px;}
+  .sync-status.ok{color:var(--good);}
+  .sync-status.error{color:var(--crit);}
+  .sync-status.off{color:var(--ink-faint);}
+
+  /* Access gate */
+  .access-gate{position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;}
+  .access-card{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:32px 28px; max-width:340px; width:100%; text-align:center;}
+  .access-card h2{font-family:'Fraunces', serif; font-weight:500; font-size:20px; margin:0 0 6px; color:var(--ink);}
+  .access-card p{font-size:13px; color:var(--ink-soft); margin:0 0 18px;}
+  .access-card input{
+    width:100%; font-family:'IBM Plex Mono', monospace; font-size:15px; padding:10px 12px;
+    border:1px solid var(--line); border-radius:4px; text-align:center; letter-spacing:2px; margin-bottom:12px; box-sizing:border-box;
+  }
+  .access-card button{
+    width:100%; font-family:'Inter', sans-serif; font-weight:600; font-size:14px; padding:10px;
+    border:none; border-radius:4px; background:var(--ink); color:#fff; cursor:pointer;
+  }
+  .access-card button:hover{background:#0F2E4A;}
+  .access-error{color:var(--crit); font-size:12.5px; margin-top:10px; min-height:16px;}
+
+  header{
+    background:var(--ink); color:#EAF2EE; border-radius:6px; padding:20px 26px; margin-bottom:8px;
+  }
+  header .farm-name{font-family:'Fraunces', serif; font-weight:500; font-size:22px;}
+  header .farm-sub{margin-top:4px; font-size:13px; color:#B9CBC4;}
+
+  .alarm-btn{
+    font-family:'Inter', sans-serif; font-size:12.5px; padding:8px 14px; border-radius:20px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink-soft); cursor:pointer;
+  }
+  .alarm-btn:hover{background:var(--panel-alt);}
+  .alarm-note{font-size:12px; color:var(--ink-soft); margin:8px 2px 0;}
+
+  .section-heading{font-family:'Fraunces', serif; font-weight:500; font-size:20px; margin:32px 2px 4px;}
+  .section-sub{font-size:13px; color:var(--ink-soft); margin:0 2px 16px;}
+
+  .log-panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:20px 22px;}
+  .log-form{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{font-size:12px; color:var(--ink-soft);}
+  .field input, .field select{
+    font-family:'IBM Plex Mono', monospace; font-size:13.5px; padding:8px 9px;
+    border:1px solid var(--line); border-radius:3px; background:#FBFDFC; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--water); outline-offset:-1px;}
+  .field .hint{font-size:11px; color:var(--ink-faint); font-family:'Inter',sans-serif;}
+  .field-group-label{
+    grid-column:1/-1; font-size:11px; color:var(--ink-faint);
+    margin:6px 0 -4px; padding-top:10px; border-top:1px solid #EEF1EF;
+  }
+  .field-group-label:first-child{border-top:none; padding-top:0; margin-top:0;}
+
+  .preview-strip{
+    margin-top:16px; padding:14px 16px; background:var(--panel-alt); border:1px solid var(--line); border-radius:4px;
+    display:flex; flex-wrap:wrap; gap:22px;
+  }
+  .preview-item .p-label{font-size:11.5px; color:var(--ink-soft);}
+  .preview-item .p-value{font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:600; margin-top:2px;}
+
+  .log-actions{margin-top:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
+  .add-btn{
+    font-family:'Inter', sans-serif; font-weight:600; font-size:13.5px; padding:10px 20px;
+    border-radius:3px; border:none; background:var(--ink); color:#fff; cursor:pointer;
+  }
+  .add-btn:hover{background:#0F2E4A;}
+  .form-note{font-size:12px; color:var(--ink-faint);}
+  .submit-flag{font-size:12.5px; font-weight:600; margin-top:10px;}
+  .submit-flag.crit{color:var(--crit);}
+  .submit-flag.warn{color:var(--warn);}
+
+  .setup-panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px 20px;}
+  .setup-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px 16px;}
+  .setup-row{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px solid #EEF1EF;}
+  .setup-row label{font-size:12.5px; color:var(--ink-soft); font-family:'Fraunces', serif;}
+  .setup-row input{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; padding:5px 7px; width:130px;
+    border:1px solid var(--line); border-radius:3px; background:#FBFDFC; color:var(--ink);
+  }
+
+  .log-table-wrap{margin-top:26px; overflow-x:auto; border:1px solid var(--line); border-radius:6px;}
+  table.log-table{width:100%; border-collapse:collapse; font-size:13px; min-width:1380px;}
+  table.log-table th{
+    text-align:left; font-family:'Inter', sans-serif; font-weight:600; font-size:11.5px;
+    color:var(--ink-soft); background:var(--panel-alt); padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  table.log-table td{padding:9px 12px; border-bottom:1px solid #EEF1EF; font-family:'IBM Plex Mono', monospace; white-space:nowrap;}
+  table.log-table tbody tr:last-child td{border-bottom:none;}
+  table.log-table td.pond-cell{font-family:'Inter', sans-serif; font-weight:500;}
+  table.log-table td.mortality-flag{color:var(--crit); font-weight:600;}
+  .del-btn{background:none; border:none; color:#B7C4BE; cursor:pointer; font-size:14px; padding:2px 6px;}
+  .del-btn:hover{color:var(--crit);}
+  .empty-row td{font-family:'Inter', sans-serif; color:var(--ink-faint); padding:22px 12px;}
+  .log-filter{
+    font-family:'Inter', sans-serif; font-size:13px; padding:6px 10px; border-radius:3px;
+    border:1px solid var(--line); background:var(--panel); color:var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="access-gate" id="accessGate">
+  <div class="access-card">
+    <h2>Nagamas Aquaculture</h2>
+    <p>Enter the access code to continue.</p>
+    <input type="password" id="accessInput" placeholder="Access code" autocomplete="off">
+    <button id="accessSubmit" type="button">Enter</button>
+    <div class="access-error" id="accessError"></div>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none;">
+
+  <div class="top-nav">
+    <div class="brand" id="brandText">Nagamas Aquaculture Sdn Bhd — Back End</div>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span class="sync-status off" id="syncStatus">● not connected</span>
+      <a class="nav-link" id="dashboardLink" href="index.html" target="_blank" rel="noopener">← Back to Dashboard</a>
+      <button class="nav-link" id="langToggle" type="button">中文</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="farm-name" id="farmLogHeading">Farm log</div>
+    <div class="farm-sub" id="farmLogSub">Ground staff — record each tank visit here. Saved automatically.</div>
+  </header>
+
+  <div class="log-panel" style="margin-top:22px;">
+    <div class="log-form">
+      <div class="field">
+        <label for="f-date" id="lblDate">Date</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field">
+        <label for="f-pond" id="lblTank">Tank</label>
+        <select id="f-pond"></select>
+      </div>
+      <div class="field">
+        <label for="f-day" id="lblDay">Day (of cycle)</label>
+        <input type="number" id="f-day" placeholder="e.g. 42">
+      </div>
+
+      <div class="field-group-label" id="lblWaterQuality">Water quality</div>
+      <div class="field">
+        <label for="f-temp" id="lblTemp">Temperature (°C)</label>
+        <input type="number" step="0.1" id="f-temp" placeholder="e.g. 28.0">
+      </div>
+      <div class="field">
+        <label for="f-ph" id="lblPh">pH</label>
+        <input type="number" step="0.1" id="f-ph" placeholder="e.g. 7.5">
+      </div>
+      <div class="field">
+        <label for="f-do" id="lblDo">Dissolved O₂ (mg/L)</label>
+        <input type="number" step="0.1" id="f-do" placeholder="e.g. 5.0">
+      </div>
+      <div class="field">
+        <label for="f-no2" id="lblNo2">Nitrite, NO2 (mg/L)</label>
+        <input type="number" step="0.01" id="f-no2" placeholder="e.g. 0.2">
+      </div>
+      <div class="field">
+        <label for="f-no3" id="lblNo3">Nitrate, NO3 (mg/L)</label>
+        <input type="number" step="0.1" id="f-no3" placeholder="e.g. 30">
+      </div>
+      <div class="field">
+        <label for="f-ammonia" id="lblAmmonia">Ammonia, TAN (mg/L)</label>
+        <input type="number" step="0.01" id="f-ammonia" placeholder="e.g. 0.3">
+      </div>
+
+      <div class="field-group-label" id="lblStock">Stock</div>
+      <div class="field">
+        <label for="f-totalfish" id="lblTotalFish">Total fish</label>
+        <input type="number" id="f-totalfish" placeholder="current count">
+      </div>
+      <div class="field">
+        <label for="f-avgsize" id="lblAvgSize">Average size (g)</label>
+        <input type="number" step="0.1" id="f-avgsize" placeholder="per fish">
+      </div>
+      <div class="field">
+        <label for="f-mortality" id="lblMortality">Mortality (fish)</label>
+        <input type="number" id="f-mortality" placeholder="0">
+        <span class="hint" id="mortHint"></span>
+      </div>
+      <div class="field">
+        <label for="f-feedpct" id="lblFeedPct">Feed %</label>
+        <input type="number" step="0.1" id="f-feedpct">
+        <span class="hint" id="feedHint">suggested —</span>
+      </div>
+      <div class="field">
+        <label for="f-feedkg" id="lblFeedKg">Total feed given (kg)</label>
+        <input type="number" step="0.1" id="f-feedkg" placeholder="actual amount fed">
+        <span class="hint" id="feedKgHint"></span>
+      </div>
+    </div>
+
+    <div class="preview-strip">
+      <div class="preview-item"><div class="p-label" id="lblTotalBiomass">Total biomass</div><div class="p-value" id="pvBiomass">–</div></div>
+    </div>
+
+    <div class="log-actions">
+      <span class="form-note" id="biomassNote">Total biomass is calculated automatically from total fish × average size</span>
+      <button class="add-btn" id="addEntryBtn">Add entry</button>
+    </div>
+    <div id="submitFlag"></div>
+  </div>
+
+  <div class="log-actions" style="margin-top:14px;">
+    <button class="alarm-btn" id="alarmSoundBtn">🔊 Enable sound alerts on submit</button>
+  </div>
+  <div class="alarm-note" id="alarmNote">Plays a beep immediately if a temperature, pH, DO, or nitrogen reading you just logged needs attention.</div>
+
+  <div class="section-heading" style="margin-top:34px; font-size:17px;" id="setupHeading">Tank setup</div>
+  <div class="section-sub" id="setupSub">Set the supplier once per tank — update only when a tank is restocked</div>
+  <div class="setup-panel">
+    <div class="setup-grid" id="setupGrid"></div>
+  </div>
+
+  <div class="log-actions" style="margin-top:26px;">
+    <select class="log-filter" id="tableFilter"></select>
+    <span class="form-note" id="entryCount"></span>
+  </div>
+
+  <div class="log-table-wrap">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th id="thDate">Date</th><th id="thTank">Tank</th><th id="thDay">Day</th>
+          <th id="thTemp">Temp (°C)</th><th id="thPh">pH</th><th id="thDo">DO (mg/L)</th>
+          <th id="thNo2">NO2 (mg/L)</th><th id="thNo3">NO3 (mg/L)</th><th id="thAmmonia">Ammonia (mg/L)</th>
+          <th id="thTotalFish">Total fish</th><th id="thAvgSize">Avg size (g)</th><th id="thMortality">Mortality</th>
+          <th id="thFeedPct">Feed %</th><th id="thFeedKg">Feed given (kg)</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  /* ================= Tilapia-tuned thresholds (used only for the submit-time alert) ================= */
+  function tempStatus(v){ if(v<20||v>33) return 'crit'; if(v<25||v>30) return 'warn'; return 'good'; }
+  function phStatus(v){ if(v<6.0||v>9.5) return 'crit'; if(v<6.5||v>9.0) return 'warn'; return 'good'; }
+  function doStatus(v){ if(v<2.0) return 'crit'; if(v<4.0) return 'warn'; return 'good'; }
+  function no2Status(v){ if(v==null||Number.isNaN(v)) return 'good'; if(v>3.0) return 'crit'; if(v>=1.0) return 'warn'; return 'good'; }
+  function no3Status(v){ if(v==null||Number.isNaN(v)) return 'good'; if(v>100) return 'crit'; if(v>=50) return 'warn'; return 'good'; }
+  function ammoniaStatus(v){ if(v==null||Number.isNaN(v)) return 'good'; if(v>1.5) return 'crit'; if(v>=0.5) return 'warn'; return 'good'; }
+  function worst(list){ if(list.includes('crit')) return 'crit'; if(list.includes('warn')) return 'warn'; return 'good'; }
+
+  /* Tilapia feeding-rate guideline by average body weight */
+  function suggestFeedPct(avgG){
+    if(!avgG || avgG<=0) return null;
+    if(avgG<5) return 8; if(avgG<20) return 6; if(avgG<50) return 5;
+    if(avgG<100) return 3.5; if(avgG<250) return 2.5; if(avgG<500) return 1.7;
+    return 1.2;
+  }
+
+  const pondNames = Array.from({length:13}, (_, i) => `Tank ${i+1}`);
+
+  /* ================= i18n ================= */
+  const LANG_KEY = 'ui-lang';
+  let lang = 'en';
+
+  const I18N = {
+    en: {
+      brand: 'Nagamas Aquaculture Sdn Bhd — Back End',
+      dashboardLink: '← Back to Dashboard',
+      farmLogHeading: 'Farm log',
+      farmLogSub: 'Ground staff — record each tank visit here. Saved automatically.',
+      lblDate: 'Date', lblTank: 'Tank', lblDay: 'Day (of cycle)',
+      lblWaterQuality: 'Water quality',
+      lblTemp: 'Temperature (°C)', lblPh: 'pH', lblDo: 'Dissolved O₂ (mg/L)',
+      lblNo2: 'Nitrite, NO2 (mg/L)', lblNo3: 'Nitrate, NO3 (mg/L)', lblAmmonia: 'Ammonia, TAN (mg/L)',
+      lblStock: 'Stock', lblTotalFish: 'Total fish', lblAvgSize: 'Average size (g)',
+      lblMortality: 'Mortality (fish)', lblFeedPct: 'Feed %', lblFeedKg: 'Total feed given (kg)',
+      lblTotalBiomass: 'Total biomass',
+      biomassNote: 'Total biomass is calculated automatically from total fish × average size',
+      addEntry: 'Add entry',
+      enableSoundSubmit: '🔊 Enable sound alerts on submit',
+      soundAlertsOn: '🔇 Sound alerts on',
+      alarmNote: 'Plays a beep immediately if a temperature, pH, DO, or nitrogen reading you just logged needs attention.',
+      setupHeading: 'Tank setup',
+      setupSub: 'Set the supplier once per tank — update only when a tank is restocked',
+      supplierPlaceholder: 'supplier',
+      allTanks: 'All tanks',
+      thDate: 'Date', thTank: 'Tank', thDay: 'Day',
+      thTemp: 'Temp (°C)', thPh: 'pH', thDo: 'DO (mg/L)',
+      thNo2: 'NO2 (mg/L)', thNo3: 'NO3 (mg/L)', thAmmonia: 'Ammonia (mg/L)',
+      thTotalFish: 'Total fish', thAvgSize: 'Avg size (g)', thMortality: 'Mortality',
+      thFeedPct: 'Feed %', thFeedKg: 'Feed given (kg)',
+      noEntries: 'No log entries yet — add one above to get started.',
+      urgentFlag: '⚠ This entry has a reading needing urgent attention.',
+      cautionFlag: '⚠ This entry has a reading in the caution range.',
+      suggestedPct: (n) => `suggested ${n}% of biomass`,
+      suggestedDash: 'suggested —',
+      expectedFeed: (kg, pct) => `≈ ${kg} kg at ${pct}% of biomass`,
+      mortHint: 'total fish auto-adjusted, editable above',
+      entriesCount: (n) => `${n} entr${n===1?'y':'ies'}`,
+      deleteEntry: 'Delete entry',
+      tankLabel: (n) => `Tank ${n}`,
+      placeholders: {
+        'f-day':'e.g. 42', 'f-temp':'e.g. 28.0', 'f-ph':'e.g. 7.5', 'f-do':'e.g. 5.0',
+        'f-no2':'e.g. 0.2', 'f-no3':'e.g. 30', 'f-ammonia':'e.g. 0.3',
+        'f-totalfish':'current count', 'f-avgsize':'per fish', 'f-mortality':'0', 'f-feedkg':'actual amount fed',
+      },
+    },
+    zh: {
+      brand: 'Nagamas Aquaculture Sdn Bhd — 后台',
+      dashboardLink: '← 返回主页',
+      farmLogHeading: '养殖日志',
+      farmLogSub: '现场人员——请在此记录每次巡查数据，系统会自动保存。',
+      lblDate: '日期', lblTank: '鱼池', lblDay: '养殖天数',
+      lblWaterQuality: '水质',
+      lblTemp: '水温 (°C)', lblPh: 'pH值', lblDo: '溶解氧 (mg/L)',
+      lblNo2: '亚硝酸盐 NO2 (mg/L)', lblNo3: '硝酸盐 NO3 (mg/L)', lblAmmonia: '氨氮 TAN (mg/L)',
+      lblStock: '存栏', lblTotalFish: '鱼只总数', lblAvgSize: '平均体重 (g)',
+      lblMortality: '死亡数量 (尾)', lblFeedPct: '投喂比例 (%)', lblFeedKg: '投喂总量 (kg)',
+      lblTotalBiomass: '总生物量',
+      biomassNote: '总生物量由鱼只总数 × 平均体重自动计算',
+      addEntry: '添加记录',
+      enableSoundSubmit: '🔊 提交时启用声音警报',
+      soundAlertsOn: '🔇 声音警报已启用',
+      alarmNote: '若刚输入的水温、pH、溶氧或氮素数值异常，系统将立即发出提示音。',
+      setupHeading: '鱼池设置',
+      setupSub: '为每个鱼池设置供应商——仅在重新放苗时更新',
+      supplierPlaceholder: '供应商',
+      allTanks: '所有鱼池',
+      thDate: '日期', thTank: '鱼池', thDay: '天数',
+      thTemp: '水温 (°C)', thPh: 'pH值', thDo: '溶解氧 (mg/L)',
+      thNo2: '亚硝酸盐 (mg/L)', thNo3: '硝酸盐 (mg/L)', thAmmonia: '氨氮 (mg/L)',
+      thTotalFish: '鱼只总数', thAvgSize: '平均体重 (g)', thMortality: '死亡数量',
+      thFeedPct: '投喂比例 (%)', thFeedKg: '投喂量 (kg)',
+      noEntries: '暂无记录——请在上方添加第一笔记录。',
+      urgentFlag: '⚠ 此记录中有数值需要紧急关注。',
+      cautionFlag: '⚠ 此记录中有数值处于注意范围。',
+      suggestedPct: (n) => `建议为生物量的 ${n}%`,
+      suggestedDash: '建议 —',
+      expectedFeed: (kg, pct) => `≈ ${kg} kg（生物量的 ${pct}%）`,
+      mortHint: '鱼只总数已自动调整，可自行修改',
+      entriesCount: (n) => `共 ${n} 条记录`,
+      deleteEntry: '删除记录',
+      tankLabel: (n) => `鱼池 ${n}`,
+      placeholders: {
+        'f-day':'例如 42', 'f-temp':'例如 28.0', 'f-ph':'例如 7.5', 'f-do':'例如 5.0',
+        'f-no2':'例如 0.2', 'f-no3':'例如 30', 'f-ammonia':'例如 0.3',
+        'f-totalfish':'目前数量', 'f-avgsize':'每尾', 'f-mortality':'0', 'f-feedkg':'实际投喂量',
+      },
+    },
+  };
+
+  function tr(key){
+    const v = I18N[lang][key];
+    return v !== undefined ? v : key;
+  }
+
+  function tankLabel(name){
+    const m = /^Tank (\d+)$/.exec(name);
+    return m ? tr('tankLabel')(m[1]) : name;
+  }
+
+  function applyStaticI18n(){
+    document.getElementById('brandText').textContent = tr('brand');
+    document.getElementById('dashboardLink').textContent = tr('dashboardLink');
+    document.getElementById('farmLogHeading').textContent = tr('farmLogHeading');
+    document.getElementById('farmLogSub').textContent = tr('farmLogSub');
+    document.getElementById('lblDate').textContent = tr('lblDate');
+    document.getElementById('lblTank').textContent = tr('lblTank');
+    document.getElementById('lblDay').textContent = tr('lblDay');
+    document.getElementById('lblWaterQuality').textContent = tr('lblWaterQuality');
+    document.getElementById('lblTemp').textContent = tr('lblTemp');
+    document.getElementById('lblPh').textContent = tr('lblPh');
+    document.getElementById('lblDo').textContent = tr('lblDo');
+    document.getElementById('lblNo2').textContent = tr('lblNo2');
+    document.getElementById('lblNo3').textContent = tr('lblNo3');
+    document.getElementById('lblAmmonia').textContent = tr('lblAmmonia');
+    document.getElementById('lblStock').textContent = tr('lblStock');
+    document.getElementById('lblTotalFish').textContent = tr('lblTotalFish');
+    document.getElementById('lblAvgSize').textContent = tr('lblAvgSize');
+    document.getElementById('lblMortality').textContent = tr('lblMortality');
+    document.getElementById('lblFeedPct').textContent = tr('lblFeedPct');
+    document.getElementById('lblFeedKg').textContent = tr('lblFeedKg');
+    document.getElementById('lblTotalBiomass').textContent = tr('lblTotalBiomass');
+    document.getElementById('biomassNote').textContent = tr('biomassNote');
+    document.getElementById('addEntryBtn').textContent = tr('addEntry');
+    document.getElementById('alarmNote').textContent = tr('alarmNote');
+    document.getElementById('setupHeading').textContent = tr('setupHeading');
+    document.getElementById('setupSub').textContent = tr('setupSub');
+    document.getElementById('thDate').textContent = tr('thDate');
+    document.getElementById('thTank').textContent = tr('thTank');
+    document.getElementById('thDay').textContent = tr('thDay');
+    document.getElementById('thTemp').textContent = tr('thTemp');
+    document.getElementById('thPh').textContent = tr('thPh');
+    document.getElementById('thDo').textContent = tr('thDo');
+    document.getElementById('thNo2').textContent = tr('thNo2');
+    document.getElementById('thNo3').textContent = tr('thNo3');
+    document.getElementById('thAmmonia').textContent = tr('thAmmonia');
+    document.getElementById('thTotalFish').textContent = tr('thTotalFish');
+    document.getElementById('thAvgSize').textContent = tr('thAvgSize');
+    document.getElementById('thMortality').textContent = tr('thMortality');
+    document.getElementById('thFeedPct').textContent = tr('thFeedPct');
+    document.getElementById('thFeedKg').textContent = tr('thFeedKg');
+    document.getElementById('langToggle').textContent = lang === 'en' ? '中文' : 'EN';
+
+    const soundBtn = document.getElementById('alarmSoundBtn');
+    soundBtn.textContent = soundEnabled ? tr('soundAlertsOn') : tr('enableSoundSubmit');
+
+    Object.entries(tr('placeholders')).forEach(([id, ph]) => {
+      const el = document.getElementById(id);
+      if(el) el.placeholder = ph;
+    });
+
+    if(document.getElementById('f-feedpct').dataset.userEdited !== 'true'){
+      document.getElementById('feedHint').textContent = tr('suggestedDash');
+    }
+  }
+
+  async function setLang(newLang){
+    lang = newLang;
+    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
+    applyStaticI18n();
+    populateSelects();
+    renderSetup();
+    renderLogTable();
+    updatePreview();
+  }
+
+  document.getElementById('langToggle').addEventListener('click', () => {
+    setLang(lang === 'en' ? 'zh' : 'en');
+  });
+
+  /* ================= Submit-time sound alert ================= */
+  let soundEnabled = false;
+  let audioCtx = null;
+
+  function playBeep(times){
+    times = times || 2;
+    if(!soundEnabled || !audioCtx) return;
+    let t = audioCtx.currentTime;
+    for(let i=0; i<times; i++){
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.3, t+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t+0.28);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t+0.3);
+      t += 0.4;
+    }
+  }
+
+  document.getElementById('alarmSoundBtn').addEventListener('click', () => {
+    const btn = document.getElementById('alarmSoundBtn');
+    if(!soundEnabled){
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      soundEnabled = true;
+      btn.textContent = tr('soundAlertsOn');
+      playBeep(1);
+    }else{
+      soundEnabled = false;
+      btn.textContent = tr('enableSoundSubmit');
+    }
+  });
+
+  /* ================= Backend API (Google Sheets via Apps Script) =================
+     Paste the SAME Web App URL you used in fish_farm_dashboard.html here. */
+  const API_URL = 'https://nagamasaquaculture.github.io/NagamasTilapia/';
+
+  const STOCK_KEY = 'pond-stock';
+  const LOG_KEY = 'farm-log-entries';
+  const READINGS_KEY = 'tank-readings';
+  let stock = {};
+  let readings = {};
+  let logEntries = [];
+
+  function apiConfigured(){
+    return API_URL && API_URL.indexOf('PASTE_YOUR') === -1;
+  }
+
+  function setSyncStatus(state){
+    const el = document.getElementById('syncStatus');
+    if(!el) return;
+    el.className = 'sync-status ' + state;
+    el.textContent = state === 'ok' ? '● synced' : state === 'error' ? '● sync failed' : '● not connected';
+  }
+
+  async function apiGetAll(){
+    if(!apiConfigured()){ setSyncStatus('off'); return {}; }
+    try{
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      setSyncStatus('ok');
+      return data || {};
+    }catch(e){ setSyncStatus('error'); return {}; }
+  }
+
+  async function apiSet(key, value){
+    if(!apiConfigured()){ setSyncStatus('off'); return; }
+    try{
+      await fetch(API_URL, { method:'POST', body: JSON.stringify({ key, value }) });
+      setSyncStatus('ok');
+    }catch(e){ setSyncStatus('error'); }
+  }
+
+  function defaultStock(){
+    const obj = {};
+    pondNames.forEach(name => { obj[name] = { supplier:'', totalFish:0, avgSizeG:0 }; });
+    return obj;
+  }
+  function defaultReadings(){
+    const obj = {}; pondNames.forEach(name => { obj[name] = null; }); return obj;
+  }
+
+  async function loadAll(){
+    const data = await apiGetAll();
+
+    stock = data[STOCK_KEY] ? JSON.parse(data[STOCK_KEY]) : defaultStock();
+    pondNames.forEach(name => { if(!stock[name]) stock[name] = { supplier:'', totalFish:0, avgSizeG:0 }; });
+
+    readings = data[READINGS_KEY] ? JSON.parse(data[READINGS_KEY]) : defaultReadings();
+    pondNames.forEach(name => { if(!(name in readings)) readings[name] = null; });
+
+    logEntries = data[LOG_KEY] ? JSON.parse(data[LOG_KEY]) : [];
+
+    renderSetup();
+    populateSelects();
+    renderLogTable();
+    updatePreview();
+  }
+
+  async function saveStock(){ await apiSet(STOCK_KEY, JSON.stringify(stock)); }
+  async function saveReadings(){ await apiSet(READINGS_KEY, JSON.stringify(readings)); }
+  async function saveEntries(){ await apiSet(LOG_KEY, JSON.stringify(logEntries)); }
+
+  /* ================= Tank setup (supplier) ================= */
+  function renderSetup(){
+    const grid = document.getElementById('setupGrid');
+    grid.innerHTML = '';
+    pondNames.forEach(name => {
+      const s = stock[name];
+      const row = document.createElement('div');
+      row.className = 'setup-row';
+      row.innerHTML = `<label>${tankLabel(name)}</label><input type="text" class="supplier-input" data-pond="${name}" value="${s.supplier}" placeholder="${tr('supplierPlaceholder')}">`;
+      grid.appendChild(row);
+    });
+    grid.querySelectorAll('.supplier-input').forEach(el => {
+      el.addEventListener('change', async (e) => {
+        stock[e.target.dataset.pond].supplier = e.target.value;
+        await saveStock();
+      });
+    });
+  }
+
+  /* ================= Farm log form ================= */
+  function populateSelects(){
+    const opts = pondNames.map(n => `<option value="${n}">${tankLabel(n)}</option>`).join('');
+    const pondSelect = document.getElementById('f-pond');
+    const prevPond = pondSelect.value;
+    pondSelect.innerHTML = opts;
+    if(prevPond) pondSelect.value = prevPond;
+    const tableFilter = document.getElementById('tableFilter');
+    const prevFilter = tableFilter.value;
+    tableFilter.innerHTML = `<option value="all">${tr('allTanks')}</option>` + opts;
+    if(prevFilter) tableFilter.value = prevFilter;
+  }
+
+  function currentFormState(){
+    const pond = document.getElementById('f-pond').value;
+    const s = stock[pond] || { totalFish:0, avgSizeG:0 };
+    const totalFishInput = document.getElementById('f-totalfish');
+    const avgInput = Number(document.getElementById('f-avgsize').value);
+    const avgSize = avgInput>0 ? avgInput : (s.avgSizeG||0);
+    const totalFish = totalFishInput.value!=='' ? Math.max(0, Number(totalFishInput.value)||0) : (s.totalFish||0);
+    const biomass = totalFish * avgSize / 1000;
+    return { pond, s, avgSize, totalFish, biomass };
+  }
+
+  function updatePreview(){
+    const { s, avgSize, totalFish, biomass } = currentFormState();
+    const suggested = suggestFeedPct(avgSize);
+    const feedPctInput = document.getElementById('f-feedpct');
+    document.getElementById('feedHint').textContent = suggested ? tr('suggestedPct')(suggested) : tr('suggestedDash');
+    if(feedPctInput.dataset.userEdited !== 'true'){
+      feedPctInput.value = suggested !== null ? suggested : '';
+    }
+    const feedPct = Number(feedPctInput.value)||0;
+    const expectedFeedKg = biomass * feedPct / 100;
+    document.getElementById('feedKgHint').textContent = expectedFeedKg > 0 ? tr('expectedFeed')(expectedFeedKg.toFixed(1), feedPct) : '';
+
+    const mortalityInput = document.getElementById('f-mortality');
+    const mortality = Number(mortalityInput.value) || 0;
+    const totalFishInput = document.getElementById('f-totalfish');
+    if(totalFishInput.dataset.userEdited !== 'true' && mortality > 0){
+      totalFishInput.value = Math.max(0, (s.totalFish||0) - mortality);
+    }
+    document.getElementById('mortHint').textContent = mortality>0 ? tr('mortHint') : '';
+
+    document.getElementById('pvBiomass').textContent = biomass.toFixed(1) + ' kg';
+  }
+
+  ['f-pond','f-avgsize'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updatePreview);
+    document.getElementById(id).addEventListener('change', updatePreview);
+  });
+  document.getElementById('f-mortality').addEventListener('input', updatePreview);
+  const feedPctInput = document.getElementById('f-feedpct');
+  feedPctInput.addEventListener('input', () => { feedPctInput.dataset.userEdited='true'; updatePreview(); });
+  const totalFishInput = document.getElementById('f-totalfish');
+  totalFishInput.addEventListener('input', () => { totalFishInput.dataset.userEdited='true'; updatePreview(); });
+  document.getElementById('f-pond').addEventListener('change', () => {
+    feedPctInput.dataset.userEdited='false';
+    totalFishInput.dataset.userEdited='false';
+    updatePreview();
+  });
+
+  function fmt(v){ return (v===''||v===null||v===undefined||Number.isNaN(v)) ? '—' : v; }
+
+  function renderLogTable(){
+    const body = document.getElementById('logBody');
+    const filter = document.getElementById('tableFilter').value || 'all';
+    body.innerHTML = '';
+
+    const rows = logEntries
+      .filter(e => filter==='all' || e.pond===filter)
+      .sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.id-a.id);
+
+    document.getElementById('entryCount').textContent = tr('entriesCount')(rows.length);
+
+    if(rows.length===0){
+      body.innerHTML = `<tr class="empty-row"><td colspan="15">${tr('noEntries')}</td></tr>`;
+      return;
+    }
+
+    rows.forEach(e => {
+      const tr_ = document.createElement('tr');
+      const mortalityHigh = Number(e.mortality) > 0;
+      tr_.innerHTML = `
+        <td>${fmt(e.date)}</td>
+        <td class="pond-cell">${tankLabel(e.pond)}</td>
+        <td>${fmt(e.day)}</td>
+        <td>${fmt(e.temp)}</td>
+        <td>${fmt(e.ph)}</td>
+        <td>${fmt(e.dox)}</td>
+        <td>${fmt(e.no2)}</td>
+        <td>${fmt(e.no3)}</td>
+        <td>${fmt(e.ammonia)}</td>
+        <td>${fmt(e.totalFish)}</td>
+        <td>${fmt(e.avgSize)}</td>
+        <td class="${mortalityHigh?'mortality-flag':''}">${fmt(e.mortality)}</td>
+        <td>${fmt(e.feedPct)}</td>
+        <td>${fmt(e.feedKg)}</td>
+        <td><button class="del-btn" data-id="${e.id}" title="${tr('deleteEntry')}">✕</button></td>
+      `;
+      body.appendChild(tr_);
+    });
+
+    body.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.dataset.id);
+        logEntries = logEntries.filter(e => e.id !== id);
+        await saveEntries();
+        renderLogTable();
+      });
+    });
+  }
+
+  document.getElementById('addEntryBtn').addEventListener('click', async () => {
+    const { pond, s, avgSize, totalFish, biomass } = currentFormState();
+    const feedPct = Number(document.getElementById('f-feedpct').value)||0;
+    const feedKgInput = document.getElementById('f-feedkg').value;
+    const feedKg = feedKgInput !== '' ? Number(feedKgInput) : +(biomass * feedPct / 100).toFixed(1);
+
+    const tempVal = document.getElementById('f-temp').value;
+    const phVal = document.getElementById('f-ph').value;
+    const doVal = document.getElementById('f-do').value;
+    const no2Val = document.getElementById('f-no2').value;
+    const no3Val = document.getElementById('f-no3').value;
+    const ammoniaVal = document.getElementById('f-ammonia').value;
+    const dateVal = document.getElementById('f-date').value;
+    const mortality = Math.max(0, Number(document.getElementById('f-mortality').value)||0);
+
+    const entry = {
+      id: Date.now(),
+      date: dateVal,
+      pond,
+      day: document.getElementById('f-day').value,
+      temp: tempVal !== '' ? +Number(tempVal).toFixed(1) : '',
+      ph: phVal !== '' ? +Number(phVal).toFixed(1) : '',
+      dox: doVal !== '' ? +Number(doVal).toFixed(1) : '',
+      no2: no2Val !== '' ? +Number(no2Val).toFixed(2) : '',
+      no3: no3Val !== '' ? +Number(no3Val).toFixed(1) : '',
+      ammonia: ammoniaVal !== '' ? +Number(ammoniaVal).toFixed(2) : '',
+      totalFish,
+      avgSize: avgSize || '',
+      mortality,
+      feedPct: feedPct || '',
+      feedKg: feedKg || '',
+    };
+    logEntries.push(entry);
+
+    // immediate alert if any reading just logged needs attention
+    const statuses = [];
+    if(entry.temp !== '') statuses.push(tempStatus(Number(entry.temp)));
+    if(entry.ph !== '') statuses.push(phStatus(Number(entry.ph)));
+    if(entry.dox !== '') statuses.push(doStatus(Number(entry.dox)));
+    if(entry.no2 !== '') statuses.push(no2Status(Number(entry.no2)));
+    if(entry.no3 !== '') statuses.push(no3Status(Number(entry.no3)));
+    if(entry.ammonia !== '') statuses.push(ammoniaStatus(Number(entry.ammonia)));
+    const overallStatus = worst(statuses);
+    const flagEl = document.getElementById('submitFlag');
+    if(overallStatus === 'crit'){
+      playBeep(3);
+      flagEl.innerHTML = `<div class="submit-flag crit">${tr('urgentFlag')}</div>`;
+    }else if(overallStatus === 'warn'){
+      playBeep(1);
+      flagEl.innerHTML = `<div class="submit-flag warn">${tr('cautionFlag')}</div>`;
+    }else{
+      flagEl.innerHTML = '';
+    }
+
+    // apply changes back to stock
+    s.totalFish = totalFish;
+    if(avgSize > 0) s.avgSizeG = avgSize;
+
+    // apply water reading if any of the six fields were filled in
+    if(tempVal !== '' || phVal !== '' || doVal !== '' || no2Val !== '' || no3Val !== '' || ammoniaVal !== ''){
+      const prev = readings[pond];
+      readings[pond] = {
+        temp: tempVal !== '' ? Number(tempVal) : (prev ? prev.temp : 0),
+        ph: phVal !== '' ? Number(phVal) : (prev ? prev.ph : 0),
+        dox: doVal !== '' ? Number(doVal) : (prev ? prev.dox : 0),
+        no2: no2Val !== '' ? Number(no2Val) : (prev ? prev.no2 : null),
+        no3: no3Val !== '' ? Number(no3Val) : (prev ? prev.no3 : null),
+        ammonia: ammoniaVal !== '' ? Number(ammoniaVal) : (prev ? prev.ammonia : null),
+        date: dateVal,
+      };
+    }
+
+    await saveEntries();
+    await saveStock();
+    await saveReadings();
+    renderSetup();
+    renderLogTable();
+
+    document.getElementById('f-day').value = '';
+    document.getElementById('f-temp').value = '';
+    document.getElementById('f-ph').value = '';
+    document.getElementById('f-do').value = '';
+    document.getElementById('f-no2').value = '';
+    document.getElementById('f-no3').value = '';
+    document.getElementById('f-ammonia').value = '';
+    document.getElementById('f-avgsize').value = '';
+    document.getElementById('f-mortality').value = '';
+    document.getElementById('f-feedkg').value = '';
+    feedPctInput.dataset.userEdited = 'false';
+    totalFishInput.dataset.userEdited = 'false';
+    updatePreview();
+  });
+
+  document.getElementById('tableFilter').addEventListener('change', renderLogTable);
+
+  /* ================= Access gate =================
+     This is a soft deterrent, not real security — the code lives in
+     this file's source, viewable by anyone. Set your own code below. */
+  const ACCESS_CODE = 'tilapia2026';
+  const ACCESS_KEY = 'nagamas-backend-access';
+
+  async function startApp(){
+    document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+    try{
+      if(localStorage.getItem(LANG_KEY) === 'zh') lang = 'zh';
+    }catch(e){}
+    applyStaticI18n();
+    await loadAll();
+  }
+
+  function showApp(){
+    document.getElementById('accessGate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    startApp();
+  }
+
+  function tryAccess(){
+    const input = document.getElementById('accessInput');
+    if(input.value === ACCESS_CODE){
+      try{ localStorage.setItem(ACCESS_KEY, 'true'); }catch(e){}
+      showApp();
+    }else{
+      document.getElementById('accessError').textContent = 'Incorrect code, please try again.';
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  document.getElementById('accessSubmit').addEventListener('click', tryAccess);
+  document.getElementById('accessInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') tryAccess();
+  });
+
+  /* ================= Init ================= */
+  (function(){
+    let alreadyIn = false;
+    try{ alreadyIn = localStorage.getItem(ACCESS_KEY) === 'true'; }catch(e){}
+    if(alreadyIn){ showApp(); }
+    else{ document.getElementById('accessInput').focus(); }
+  })();
+</script>
+</body>
+</html>
