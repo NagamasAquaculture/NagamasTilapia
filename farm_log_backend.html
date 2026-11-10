@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nagamas Aquaculture — Farm Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07121D; --panel:#0F2233; --panel2:#142C42; --line:#1E3A54; --line2:#2A4B6B;
+    --ink:#E7F2F9; --ink2:#A3BACD; --ink3:#6F8BA3;
+    --accent:#3CC8E0; --accent2:#1E8FB3;
+    --good:#2FBE86; --warn:#F2B53C; --crit:#EF5A55; --nodata:#5A6F84;
+    --s1:#A6E9F4; --s2:#5CCCE3; --s3:#2A9FC4; --s4:#1B6F99;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:'Barlow',system-ui,sans-serif; font-size:15.5px; line-height:1.45; min-height:100vh;
+    background-image:radial-gradient(ellipse at 10% -10%, rgba(60,200,224,.12), transparent 50%); background-attachment:fixed}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  button,select,input{font-family:inherit; font-size:inherit}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .wrap{max-width:1180px; margin:0 auto; padding:16px 18px 70px}
+  .ic{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0}
+
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:4px 0 14px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; gap:12px; align-items:center}
+  .logo{width:42px; height:42px}
+  .brand-name{font-weight:700; font-size:19px}
+  .brand-sub{color:var(--ink3); font-size:13px}
+  .top-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; background:var(--accent); color:#04202B; border:none; border-radius:9px; padding:9px 15px; font-weight:600; cursor:pointer; text-decoration:none; white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:disabled{opacity:.55; cursor:wait}
+  .btn.ghost{background:transparent; color:var(--ink2); border:1px solid var(--line2)}
+  .btn.ghost:hover{background:var(--panel2); color:var(--ink)}
+  .btn.small{padding:6px 11px; font-size:13.5px}
+  .sync{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink3)}
+  .sync i{width:8px; height:8px; border-radius:50%; background:var(--nodata)}
+  .sync.ok{color:var(--good)} .sync.ok i{background:var(--good)}
+  .sync.error{color:var(--crit)} .sync.error i{background:var(--crit)}
+  .sync.saving{color:var(--accent)} .sync.saving i{background:var(--accent)}
+
+  .progress-card{display:grid; grid-template-columns:auto 1fr auto; gap:18px; align-items:center; margin-top:16px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px}
+  .progress-card h1{margin:0; font-size:22px}
+  .progress-card p{margin:2px 0 0; color:var(--ink2); font-size:14px}
+  .bar{height:10px; background:#0A1826; border-radius:6px; overflow:hidden}
+  .bar span{display:block; height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:6px; transition:width .4s}
+  .date-pick{display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--ink3)}
+  input, select{background:#0A1826; color:var(--ink); border:1px solid var(--line2); border-radius:9px; padding:10px 11px}
+  input:focus, select:focus{border-color:var(--accent); outline:none}
+  input[type=number]{font-family:'IBM Plex Mono',monospace}
+
+  .step{display:flex; align-items:center; gap:10px; margin:24px 2px 10px}
+  .step b{display:inline-flex; width:26px; height:26px; border-radius:50%; background:var(--accent); color:#04202B; align-items:center; justify-content:center; font-size:14px}
+  .step h2{margin:0; font-size:18px}
+  .step span{color:var(--ink3); font-size:13.5px}
+
+  .picker{display:grid; grid-template-columns:repeat(auto-fill, minmax(96px,1fr)); gap:8px}
+  .pick{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:9px 6px 8px; color:var(--ink); cursor:pointer; text-align:center}
+  .pick:hover{border-color:var(--line2)}
+  .pick.sel{border-color:var(--accent); background:var(--panel2); box-shadow:0 0 0 1px var(--accent) inset}
+  .pick svg{width:46px; height:46px; display:block; margin:0 auto 3px}
+  .pick .nm{font-weight:600; font-size:14px}
+  .pick .sm{font-size:11.5px; color:var(--ink3)}
+  .pick .done{position:absolute; top:6px; right:6px; width:18px; height:18px; border-radius:50%; background:var(--good); color:#04202B; font-size:12px; font-weight:700; display:none; align-items:center; justify-content:center}
+  .pick.logged .done{display:flex}
+  .wbadge{position:absolute; top:5px; left:5px; font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:10px; background:rgba(242,181,60,.2); color:var(--warn)}
+  .wdue, .wdue .mono{color:var(--warn) !important; font-weight:600}
+
+  .tank-bar{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:12px; padding:12px 16px; background:var(--panel2); border:1px solid var(--line); border-radius:12px; font-size:14px; color:var(--ink2)}
+  .tank-bar strong{color:var(--ink); font-size:17px}
+  .tank-bar .mono{color:var(--ink)}
+
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px}
+  .card-h{display:flex; align-items:center; gap:8px; font-weight:600; font-size:16px; margin-bottom:12px}
+  .card-h .ic{color:var(--accent)}
+  .card-h small{margin-left:auto; color:var(--ink3); font-weight:500; font-size:12.5px}
+  .fields{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px}
+  .f{display:flex; flex-direction:column; gap:5px}
+  .f label{font-size:13px; color:var(--ink2); display:flex; justify-content:space-between; align-items:flex-start; gap:6px}
+  .f input::placeholder{color:#3E5A74}
+  .f input{width:100%; font-size:17px}
+  .f .hint{font-size:12px; color:var(--ink3); min-height:16px}
+  .chip{font-size:11px; font-weight:600; padding:1px 7px; border-radius:20px; white-space:nowrap; line-height:1.5; align-self:flex-start}
+  .chip:empty{display:none}
+  .more{display:block; margin:12px auto 0}
+  .c-good{background:rgba(47,190,134,.16); color:var(--good)} .c-warn{background:rgba(242,181,60,.16); color:var(--warn)} .c-crit{background:rgba(239,90,85,.18); color:#FF8783}
+  .f.warn input{border-color:var(--warn)} .f.crit input{border-color:var(--crit)}
+  .result{margin-top:12px; padding:10px 12px; background:var(--panel2); border-radius:10px; font-size:14px; color:var(--ink2)}
+  .result b{color:var(--ink); font-family:'IBM Plex Mono',monospace}
+  .feed-head{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+  .sess-row{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  .sess-row .f label i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px}
+  .compare{margin-top:12px}
+  .compare .bar{height:14px; position:relative; overflow:visible}
+  .compare .tick{position:absolute; top:-4px; width:3px; height:22px; background:var(--ink); border-radius:2px}
+  .compare-txt{display:flex; justify-content:space-between; font-size:13px; color:var(--ink2); margin-top:6px}
+
+  .actions{position:sticky; bottom:0; z-index:5; margin-top:16px; display:flex; gap:10px; align-items:center; justify-content:flex-end; flex-wrap:wrap; padding:12px 16px; background:rgba(15,34,51,.96); border:1px solid var(--line); border-radius:14px; backdrop-filter:blur(6px)}
+  .actions .msg{margin-right:auto; font-size:14px; color:var(--ink2)}
+  .actions .btn{padding:12px 22px; font-size:16px}
+  .flag{margin-top:10px; padding:10px 14px; border-radius:10px; font-weight:500; display:none}
+  .flag.show{display:block}
+  .flag.crit{background:rgba(239,90,85,.14); border:1px solid rgba(239,90,85,.5); color:#FFD9D7}
+  .flag.warn{background:rgba(242,181,60,.12); border:1px solid rgba(242,181,60,.5); color:#FCE7BE}
+  .flag.info{background:rgba(60,200,224,.1); border:1px solid rgba(60,200,224,.45); color:#CFF4FB}
+  .toast{position:fixed; left:50%; bottom:24px; transform:translate(-50%, 30px); opacity:0; background:var(--good); color:#04202B; font-weight:600; padding:12px 20px; border-radius:10px; transition:all .25s; z-index:60; pointer-events:none}
+  .toast.show{opacity:1; transform:translate(-50%,0)}
+  .toast.err{background:var(--crit); color:#fff}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:10px}
+  .setup{width:100%; border-collapse:collapse; font-size:14px}
+  .setup th{text-align:left; color:var(--ink3); font-weight:600; font-size:12.5px; padding:6px 8px}
+  .setup td{padding:5px 8px; border-top:1px solid rgba(30,58,84,.6)}
+  .setup input{width:100%; padding:7px 9px; font-size:14px}
+  .setup td.nm{font-weight:600; white-space:nowrap}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
+  .filters .count{margin-left:auto; color:var(--ink3); font-size:13px}
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px}
+  table.log{width:100%; border-collapse:collapse; font-size:13.5px; min-width:1100px}
+  table.log th{background:var(--panel2); color:var(--ink2); font-weight:600; font-size:12.5px; text-align:left; padding:9px 10px; white-space:nowrap}
+  table.log td{padding:8px 10px; border-top:1px solid rgba(30,58,84,.6); font-family:'IBM Plex Mono',monospace; white-space:nowrap}
+  table.log td.nm{font-family:'Barlow',sans-serif; font-weight:600}
+  table.log tr.editing{background:rgba(60,200,224,.08)}
+  td.v-warn{color:var(--warn); font-weight:600} td.v-crit{color:#FF8783; font-weight:600}
+  .rowbtn{background:none; border:1px solid var(--line2); color:var(--ink2); border-radius:7px; padding:4px 9px; cursor:pointer; font-size:12.5px; font-family:'Barlow',sans-serif; margin-right:4px}
+  .rowbtn:hover{color:var(--ink); border-color:var(--accent)}
+  .rowbtn.del:hover{border-color:var(--crit); color:#FF8783}
+  .empty{color:var(--ink3); text-align:center; padding:20px}
+  .note{font-size:12.5px; color:var(--ink3); margin:8px 2px 0}
+
+  .gate{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:20px; background:var(--bg); background-image:radial-gradient(ellipse at 50% 20%, rgba(60,200,224,.18), transparent 60%)}
+  .gate-card{width:100%; max-width:360px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:30px 26px; text-align:center}
+  .gate-card h2{margin:10px 0 4px}
+  .gate-card p{margin:0 0 18px; color:var(--ink2)}
+  .gate-card input{width:100%; text-align:center; letter-spacing:3px; font-size:16px; margin-bottom:10px}
+  .gate-card .btn{width:100%; padding:11px}
+  .gate-err{color:#FF8783; font-size:13px; min-height:18px; margin-top:8px}
+
+  /* move fish */
+  .move-grid{display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px}
+  .move-grid2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:12px; margin-top:12px}
+  .f select{width:100%; font-size:16px; padding:10px 8px}
+  .flabel{font-size:13px; color:var(--ink2)}
+  .seg{display:flex; gap:6px}
+  .seg button{flex:1 1 0; background:#0A1826; border:1px solid var(--line2); color:var(--ink2); border-radius:9px; padding:10px 8px; cursor:pointer; font-weight:600; font-size:14px}
+  .seg button.on{border-color:var(--accent); color:var(--ink); box-shadow:0 0 0 1px var(--accent) inset; background:rgba(60,200,224,.1)}
+  .result.warn{background:rgba(242,181,60,.12); color:#FCE7BE}
+  .move-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:12px}
+  .move-actions .btn{padding:11px 20px; font-size:15.5px}
+  .moves-h{margin:18px 0 4px; padding-top:14px; border-top:1px solid var(--line); font-weight:600; font-size:14px; color:var(--ink2)}
+  .mv-row{display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; padding:9px 6px; border-top:1px solid rgba(30,58,84,.6); font-size:14px}
+  .mv-row:first-child{border-top:none}
+  .mv-row.editing{background:rgba(60,200,224,.08); border-radius:8px}
+  .mv-date{font-family:'IBM Plex Mono',monospace; color:var(--ink2); min-width:104px}
+  .mv-path{font-weight:700}
+  .mv-meta{color:var(--ink3); font-size:13px}
+  .mv-btns{margin-left:auto; white-space:nowrap}
+  .mv-warn{width:100%; color:var(--warn); font-size:12.5px}
+  .mv-none{color:var(--ink3); font-size:13.5px; padding:6px 2px}
+  #moveWarn .flag{margin-top:8px; font-size:13.5px}
+  .tank-bar .moved{color:var(--accent); font-weight:600}
+  .setup tr.subrow td{border-top:none; padding-top:0}
+  .setup td.sub{font-size:12.5px; color:var(--accent); white-space:normal}
+  .f .hint.move{color:var(--warn)}
+  .move-checks{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+  .move-checks:empty{display:none}
+  .chk{display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--ink); cursor:pointer; background:var(--panel2); border:1px solid var(--line2); border-radius:10px; padding:9px 12px}
+  .chk[hidden]{display:none}
+  .chk input{width:18px; height:18px; margin:1px 0 0; flex-shrink:0; accent-color:var(--accent)}
+  .dest-q{display:flex; flex-direction:column; gap:8px; font-size:14px; color:#FCE7BE; background:rgba(242,181,60,.12); border:1px solid rgba(242,181,60,.45); border-radius:10px; padding:10px 12px}
+  .dest-q[hidden]{display:none}
+  .move-day{margin-top:10px; padding:9px 12px; border-radius:10px; background:rgba(60,200,224,.08); border:1px solid rgba(60,200,224,.35); font-size:13.5px; color:var(--ink2)}
+  .move-day[hidden], .mside[hidden]{display:none}
+  .mside{margin-top:8px; display:flex; flex-direction:column; gap:6px}
+  .mside .seg button{font-size:13.5px}
+  #setupFlag{margin:0 0 10px}
+  .fixbox{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:6px 0}
+  .fixbox input{width:auto; min-width:0; flex:1 1 130px; font-size:15px; padding:8px}
+  .fixbox .lbl{flex:1 1 100%; color:var(--ink2); font-size:13px}
+  .dest-q .seg{flex-wrap:wrap}
+  .dest-q .seg button{flex:1 1 200px; font-size:13.5px; text-align:left; padding:9px 11px}
+
+  @media (max-width:860px){ .form-grid{grid-template-columns:1fr} .progress-card{grid-template-columns:1fr} .move-grid{grid-template-columns:repeat(2, minmax(0,1fr))} .move-grid2{grid-template-columns:1fr} }
+  @media (max-width:520px){ .sess-row{grid-template-columns:1fr 1fr} .wrap{padding:12px 12px 60px} .actions .btn{flex:1} .move-grid .f:first-child{grid-column:1 / -1} .move-actions .btn{flex:1} }
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="w-live" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#5ED8EC"/><stop offset=".55" stop-color="#1E8FB3"/><stop offset="1" stop-color="#0C4E6E"/></radialGradient>
+  </defs>
+  <symbol id="fish" viewBox="0 0 100 50">
+    <path fill="currentColor" d="M6 25 C18 6 52 3 72 18 L94 5 L88 25 L94 45 L72 32 C52 47 18 44 6 25 Z"/>
+    <path fill="currentColor" opacity=".75" d="M26 11 L30 2 L36 9 L41 1 L47 8 L53 2 L57 9 L63 5 L64 15 Z"/>
+    <circle cx="17" cy="22" r="2.8" fill="#07121D"/>
+  </symbol>
+  <symbol id="ic-drop" viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></symbol>
+  <symbol id="ic-fish" viewBox="0 0 24 24"><path d="M3 12c3-5 9-6 13-2l5-3-1.5 5L21 17l-5-3c-4 4-10 3-13-2z"/></symbol>
+  <symbol id="ic-weight" viewBox="0 0 24 24"><path d="M5 20h14l-2-11H7z"/><circle cx="12" cy="6" r="2.5"/></symbol>
+  <symbol id="ic-feed" viewBox="0 0 24 24"><path d="M7 4h10l-1.5 3L18 20H6L8.5 7z"/><path d="M9.5 12.5h5M10 15.5h4"/></symbol>
+  <symbol id="ic-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+  <symbol id="ic-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="ic-move" viewBox="0 0 24 24"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></symbol>
+  <symbol id="ic-sound" viewBox="0 0 24 24"><path d="M4 9.5h4l5-4v13l-5-4H4z"/><path d="M16.5 9a4.5 4.5 0 0 1 0 6"/></symbol>
+</svg>
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <svg class="logo" viewBox="0 0 48 48" style="width:64px;height:64px"><circle cx="24" cy="24" r="22" fill="#0B2A3E" stroke="#3CC8E0" stroke-width="2"/><use href="#fish" x="8" y="15" width="32" height="17" style="color:#5ED8EC"/></svg>
+    <h2>Nagamas · <span data-i18n="farmLog">Farm Log</span></h2>
+    <p data-i18n="gateSub">Enter the access code to record tank visits.</p>
+    <input type="password" id="gateInput" autocomplete="off" data-i18n-ph="gatePh" placeholder="Access code">
+    <button class="btn" id="gateBtn" type="button" data-i18n="gateBtn">Open farm log</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none">
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22" fill="#0B2A3E" stroke="#3CC8E0" stroke-width="2"/><use href="#fish" x="8" y="15" width="32" height="17" style="color:#5ED8EC"/></svg>
+      <div><div class="brand-name">Nagamas · <span data-i18n="farmLog">Farm Log</span></div><div class="brand-sub" data-i18n="brandSub">Ground staff data entry</div></div>
+    </div>
+    <div class="top-actions">
+      <span class="sync off" id="syncStatus"><i></i><span id="syncText">Not connected</span></span>
+      <button class="btn ghost small" id="soundBtn" type="button"><svg class="ic"><use href="#ic-sound"/></svg><span id="soundText">Sound on save</span></button>
+      <a class="btn ghost small" href="index.html" target="_blank" rel="noopener" data-i18n="toDash">Dashboard →</a>
+      <button class="btn ghost small" id="langToggle" type="button">中文</button>
+    </div>
+  </header>
+
+  <section class="progress-card">
+    <div class="date-pick"><span data-i18n="logDate">Date of visit</span><input type="date" id="f-date"></div>
+    <div>
+      <h1 id="progTitle">—</h1>
+      <p id="progSub"></p>
+      <div class="bar" style="margin-top:8px"><span id="progBar" style="width:0"></span></div>
+    </div>
+    <div class="mono" id="progNum" style="font-size:28px; font-weight:600">0/13</div>
+  </section>
+
+  <div class="flag" id="storeFlag" style="margin-top:12px"></div>
+  <div class="flag warn" id="oldFlag" style="margin-top:12px"></div>
+
+  <div class="step"><b>1</b><h2 data-i18n="step1">Choose a tank</h2><span data-i18n="step1Hint">Ticked tanks are already logged for this date</span></div>
+  <div class="picker" id="picker"></div>
+  <div class="tank-bar" id="tankBar"></div>
+
+  <div class="step"><b>2</b><h2 data-i18n="step2">Record the visit</h2><span data-i18n="step2Hint">Fill in only what you measured — leave the rest blank</span></div>
+  <div class="flag info" id="editFlag"></div>
+
+  <div class="form-grid">
+    <div class="card">
+      <div class="card-h"><svg class="ic"><use href="#ic-drop"/></svg><span data-i18n="waterQuality">Water quality</span><small id="dayChip"></small></div>
+      <div class="fields" id="waterFields"></div>
+      <div class="f" style="margin-top:12px; max-width:180px"><label for="f-day"><span data-i18n="dayOfCycle">Day of cycle</span></label><input type="number" id="f-day" min="1"><span class="hint" id="dayHint"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><svg class="ic"><use href="#ic-fish"/></svg><span data-i18n="stockTitle">Fish count & weighing</span></div>
+      <div class="fields">
+        <div class="f"><label for="f-totalfish" data-i18n="fishBefore">Fish before today's losses</label><input type="number" id="f-totalfish" min="0"><span class="hint" id="fishHint"></span></div>
+        <div class="f"><label for="f-mortality" data-i18n="mortality">Dead fish removed</label><input type="number" id="f-mortality" min="0" placeholder="0"><span class="hint"></span></div>
+        <div class="f"><label for="f-avgsize" data-i18n="avgSize">Average size (g)</label><input type="number" id="f-avgsize" min="0" step="0.1"><span class="hint" id="sizeHint"></span></div>
+      </div>
+      <div class="result" id="fishResult"></div>
+      <div class="move-day" id="moveDay" hidden><div id="moveDayTxt"></div>
+        <div class="mside" id="mSideRow" hidden><span class="flabel" data-i18n="mSideQ">The fish count and weighing above are for</span>
+          <div class="seg" id="mSide"><button type="button" data-side="before" id="mSideBefore"></button><button type="button" data-side="after" id="mSideAfter"></button></div></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><svg class="ic"><use href="#ic-feed"/></svg><span data-i18n="feedTitle">Feeding (4 sessions)</span><small id="feedAlready"></small></div>
+    <div class="feed-head">
+      <div class="f" style="max-width:190px"><label for="f-feedpct"><span data-i18n="feedPct">Feed rate (% of biomass)</span></label><input type="number" id="f-feedpct" step="any" min="0" inputmode="decimal" autocomplete="off"><span class="hint" id="pctHint"></span></div>
+      <button class="btn ghost small" id="splitBtn" type="button" data-i18n="splitBtn">Fill 4 sessions with suggested amount</button>
+    </div>
+    <div class="sess-row">
+      <div class="f"><label for="f-feedkg1"><span><i style="background:var(--s1)"></i><span data-i18n="sess1">Feeding 1 (kg)</span></span></label><input type="number" id="f-feedkg1" min="0" step="any" inputmode="decimal" autocomplete="off"></div>
+      <div class="f"><label for="f-feedkg2"><span><i style="background:var(--s2)"></i><span data-i18n="sess2">Feeding 2 (kg)</span></span></label><input type="number" id="f-feedkg2" min="0" step="any" inputmode="decimal" autocomplete="off"></div>
+      <div class="f"><label for="f-feedkg3"><span><i style="background:var(--s3)"></i><span data-i18n="sess3">Feeding 3 (kg)</span></span></label><input type="number" id="f-feedkg3" min="0" step="any" inputmode="decimal" autocomplete="off"></div>
+      <div class="f"><label for="f-feedkg4"><span><i style="background:var(--s4)"></i><span data-i18n="sess4">Feeding 4 (kg)</span></span></label><input type="number" id="f-feedkg4" min="0" step="any" inputmode="decimal" autocomplete="off"></div>
+    </div>
+    <div class="compare" id="compare"></div>
+  </div>
+
+  <div class="flag" id="submitFlag"></div>
+  <div class="actions">
+    <span class="msg" id="actionMsg"></span>
+    <button class="btn ghost" id="cancelBtn" type="button" style="display:none" data-i18n="cancel">Cancel edit</button>
+    <button class="btn" id="saveBtn" type="button" data-i18n="save">Save entry</button>
+  </div>
+
+  <div class="step" id="moveStep"><b><svg class="ic" style="width:15px;height:15px"><use href="#ic-move"/></svg></b><h2 data-i18n="moveTitle">Move fish to another tank</h2><span data-i18n="moveHint">Feed, deaths and weighings go with the fish</span></div>
+  <div class="card" id="moveCard">
+    <div class="flag info" id="moveEditFlag"></div>
+    <div class="move-grid">
+      <div class="f"><label for="m-date" data-i18n="mDate">Date moved</label><input type="date" id="m-date" autocomplete="off"></div>
+      <div class="f"><label for="m-from" data-i18n="mFrom">From tank</label><select id="m-from"></select></div>
+      <div class="f"><label for="m-to" data-i18n="mTo">To tank</label><select id="m-to"></select></div>
+      <div class="f"><label for="m-fish" data-i18n="mFish">Fish moved</label><input type="number" id="m-fish" min="1" step="1" inputmode="numeric" autocomplete="off"><span class="hint" id="mFishHint"></span></div>
+      <div class="f"><label for="m-size" data-i18n="mSize">Average size (g)</label><input type="number" id="m-size" min="0" step="any" inputmode="decimal" autocomplete="off"><span class="hint" data-i18n="mSizeHint">If you weighed them while moving</span></div>
+    </div>
+    <div class="move-grid2">
+      <div class="f"><span class="flabel" data-i18n="mWhen">When</span><div class="seg" id="m-when"><button type="button" data-when="before" data-i18n="mBefore">Before first feeding</button><button type="button" data-when="after" data-i18n="mAfter">After last feeding</button></div><span class="hint" id="mWhenHint"></span></div>
+      <div class="f"><label for="m-note" data-i18n="mNote">Note (optional)</label><input type="text" id="m-note" autocomplete="off" data-i18n-ph="mNotePh"></div>
+    </div>
+    <div class="move-checks">
+      <label class="chk" id="mAllRow" hidden><input type="checkbox" id="m-all"><span id="mAllLbl"></span></label>
+      <div class="dest-q" id="mDestRow" hidden><span id="mDestQ"></span>
+        <div class="seg" id="m-dest"><button type="button" data-dest="keep" id="mDestKeep"></button><button type="button" data-dest="moved" id="mDestMoved"></button><button type="button" data-dest="clear" id="mDestClear"></button></div></div>
+    </div>
+    <div class="result" id="mPreview"></div>
+    <div class="flag" id="moveFlag"></div>
+    <div class="move-actions"><button class="btn ghost" id="mCancel" type="button" style="display:none" data-i18n="cancel">Cancel edit</button><button class="btn" id="mSave" type="button" data-i18n="mSave">Save move</button></div>
+    <div class="moves-h" data-i18n="mListTitle">Moves recorded</div>
+    <div id="moveList"></div>
+    <div id="moveWarn"></div>
+  </div>
+
+  <div class="step"><b><svg class="ic" style="width:15px;height:15px"><use href="#ic-set"/></svg></b><h2 data-i18n="setupTitle">Tank setup</h2><span data-i18n="setupHint">Update when a tank is restocked — saves automatically</span></div>
+  <div class="flag" id="setupFlag"></div>
+  <div class="panel table-wrap" style="padding:6px">
+    <table class="setup"><thead><tr><th data-i18n="colTank">Tank</th><th data-i18n="colSupplier">Supplier</th><th data-i18n="colStockDate">Stocking date</th><th data-i18n="colStocked">Fish stocked</th></tr></thead><tbody id="setupBody"></tbody></table>
+  </div>
+  <p class="note" data-i18n="setupNote">Stocking date lets the system count the day of cycle automatically. Fish stocked is used for the survival rate.</p>
+
+  <div class="step"><b><svg class="ic" style="width:15px;height:15px"><use href="#ic-list"/></svg></b><h2 data-i18n="historyTitle">Log history</h2></div>
+  <div class="panel">
+    <div class="filters">
+      <select id="filterTank"></select>
+      <select id="filterDate"></select>
+      <span class="count" id="entryCount"></span>
+    </div>
+    <div class="table-wrap"><table class="log"><thead><tr id="logHead"></tr></thead><tbody id="logBody"></tbody></table></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= settings ================= */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyx7EH0mgRn3s2KlElO_L0BKE9jLl59v8mwKcO4Np1z0M_EAf_jbVMuvFnThaeJ0ycZNg/exec';
+const ACCESS_CODE = 'tilapia2026';            // soft gate only — visible in page source
+const ACCESS_KEY = 'nagamas-backend-access';
+const LANG_KEY = 'ui-lang';
+const STOCK_KEY = 'pond-stock', LOG_KEY = 'farm-log-entries', READINGS_KEY = 'tank-readings';
+const TANKS = Array.from({length:13}, (_, i) => `Tank ${i+1}`);
+
+let lang = 'en', stock = Object.fromEntries(TANKS.map(n => [n, {supplier:'', totalFish:0, avgSizeG:0}])), readings = {}, logEntries = [];
+let selectedTank = TANKS[0], editingId = null, saving = false, soundEnabled = false, audioCtx = null, histLimit = 60;
+let loaded = false, serverV2 = false, logChars = 0, draftId = null;
+let mAllTouched = false, rowSnap = null, setupTimers = {};
+let FG = null, editFish = null, editPrevDate = null, moveEditId = null, moveDraftId = null, moveWhen = 'before', moveDest = null, moveSaving = false, moveLimit = 20;
+let moveSideSel = null, fixTank = null;
+
+/* ================= thresholds (same as dashboard) ================= */
+const STATUS = {
+  temp:    v => v<20||v>33 ? 'crit' : v<25||v>30 ? 'warn' : 'good',
+  ph:      v => v<6||v>9.5 ? 'crit' : v<6.5||v>9 ? 'warn' : 'good',
+  dox:     v => v<2 ? 'crit' : v<4 ? 'warn' : 'good',
+  ammonia: v => v>1.5 ? 'crit' : v>=0.5 ? 'warn' : 'good',
+  no2:     v => v>3 ? 'crit' : v>=1 ? 'warn' : 'good',
+  no3:     v => v>100 ? 'crit' : v>=50 ? 'warn' : 'good',
+};
+const WATER = [
+  {k:'temp', id:'f-temp', lbl:'pTemp', ideal:'25–30 °C', step:0.1, ph:'28.0', dec:1, lim:[0,45]},
+  {k:'ph', id:'f-ph', lbl:'pPh', ideal:'6.5–9.0', step:0.1, ph:'7.5', dec:1, lim:[0,14]},
+  {k:'dox', id:'f-do', lbl:'pDox', ideal:'≥ 4 mg/L', step:0.1, ph:'5.0', dec:1, lim:[0,25]},
+  {k:'ammonia', id:'f-ammonia', lbl:'pAmmonia', ideal:'< 0.5 mg/L', step:0.01, ph:'0.30', dec:2, lim:[0,50]},
+  {k:'no2', id:'f-no2', lbl:'pNo2', ideal:'< 1 mg/L', step:0.01, ph:'0.20', dec:2, lim:[0,50]},
+  {k:'no3', id:'f-no3', lbl:'pNo3', ideal:'< 50 mg/L', step:0.1, ph:'30', dec:1, lim:[0,500]},
+];
+const RANK = {good:1, warn:2, crit:3};
+function suggestFeedPct(g){
+  if(!g || g<=0) return null;
+  if(g<5) return 8; if(g<20) return 6; if(g<50) return 5; if(g<100) return 3.5; if(g<250) return 2.5; if(g<500) return 1.7; return 1.2;
+}
+
+/* ================= i18n ================= */
+const I18N = {
+  en: {
+    farmLog:'Farm Log', brandSub:'Ground staff data entry', toDash:'Dashboard →', gateSub:'Enter the access code to record tank visits.', gatePh:'Access code', gateBtn:'Open farm log', gateErr:'Incorrect code, please try again.',
+    synced:'Synced', syncFail:'Sync failed', syncOff:'Not connected', syncSaving:'Saving…', soundOff:'Sound on save: off', soundOn:'Sound on save: on',
+    logDate:'Date of visit', progTitle:(n,d)=>`${n} of 13 tanks logged ${d}`, progToday:'today', progOn:d=>`on ${d}`, progDone:'Every tank is logged — great work!', progLeft:list=>`Still to do: ${list}`,
+    step1:'Choose a tank', step1Hint:'Ticked tanks are already logged for this date', step2:'Record the visit', step2Hint:'Fill in only what you measured — leave the rest blank',
+    inTank:'in tank', lastSize:'last weighed', lastVisit:'last visit', dayWord:'Day', never:'never', fishWord:'fish',
+    waterQuality:'Water quality', dayOfCycle:'Day of cycle', dayAuto:d=>`Auto from stocking date: day ${d}`,
+    pTemp:'Temperature (°C)', pPh:'pH', pDox:'Dissolved oxygen (mg/L)', pAmmonia:'Ammonia TAN (mg/L)', pNo2:'Nitrite NO₂ (mg/L)', pNo3:'Nitrate NO₃ (mg/L)',
+    ideal:r=>`Ideal ${r}`, stGood:'Normal', stWarn:'Caution', stCrit:'Attention', outOfRange:'Looks wrong — check the reading',
+    stockTitle:'Fish count & weighing', fishBefore:"Fish before today's losses", mortality:'Dead fish removed', avgSize:'Average size (g)',
+    fishHintCur:n=>`Blank = current count (${n})`, fishHintNone:'Enter the stocked count', sizeHint:'Only if you weighed fish today',
+    sizeCmp:(g,d)=>`${g>0?'+':''}${g} g vs last weighing (${d})`,
+    fishResult:(a,m,r)=>`Fish in tank after saving: <b>${a}</b> − <b>${m}</b> = <b>${r}</b>`, fishResultNoMort:r=>`Fish in tank after saving: <b>${r}</b>`,
+    biomass:kg=>` · biomass ≈ <b>${kg} kg</b>`,
+    feedTitle:'Feeding (4 sessions)', feedPct:'Feed rate (% of biomass)', pctHint:p=>`Suggested for this size: ${p}%`, pctNone:'Weigh fish to get a suggestion',
+    splitBtn:'Fill 4 sessions with suggested amount', sess1:'Feeding 1 (kg)', sess2:'Feeding 2 (kg)', sess3:'Feeding 3 (kg)', sess4:'Feeding 4 (kg)',
+    feedAlready:kg=>`Already logged for this tank & date: ${kg} kg`,
+    cmpTotal:(kg,rm)=>`This entry: ${kg} kg · RM ${rm}`, cmpSug:kg=>`Suggested for the day ≈ ${kg} kg`, cmpNoSug:'No suggestion yet (needs fish count and size)',
+    save:'Save entry', saveEdit:'Save changes', saving:'Saving…', cancel:'Cancel edit',
+    editing:(t,d)=>`Editing ${t} · ${d}. Change what you need, then press “Save changes”.`,
+    msgReady:t=>`Ready to save for ${t}`, needSomething:'Nothing filled in yet — enter at least one reading, count or feeding.',
+    badValue:f=>`${f} looks wrong — please check it.`, needDate:'Please choose the date of the visit.',
+    savedToast:t=>`Saved ✓ ${t}`, updatedToast:t=>`Updated ✓ ${t}`, deletedToast:'Entry deleted', failToast:'Could not save — check the internet connection',
+    nextWeigh:'Next weighing', wDueToday:'due today', wLate:n=>`${n} day${n===1?'':'s'} overdue`, wIn:(d, n)=>`${d} (in ${n} day${n===1?'':'s'})`,
+    weighNow:'Weighing due — weigh 20–30 fish and enter the average size', progWeigh:list=>` · Weighing due: ${list}`, weighBadge:'Weigh',
+    failOffline:'Not saved — no connection to the cloud. Check the internet, then press Save again.', failFull:'Not saved — the cloud sheet is full. Ask the manager to update the Apps Script to version 2.',
+    storeFlag:p=>`Cloud storage is ${p}% full. Ask the manager to update the Apps Script to version 2 so entries keep saving.`, loadFail:'Could not load the farm data — check the internet connection. Retrying…',
+    flagCrit:list=>`Urgent: ${list}. Tell the supervisor now.`, flagWarn:list=>`Keep an eye on: ${list}.`,
+    setupTitle:'Tank setup', setupHint:'Update when a tank is restocked — saves automatically', colTank:'Tank', colSupplier:'Supplier', colStockDate:'Stocking date', colStocked:'Fish stocked',
+    setupNote:'Stocking date lets the system count the day of cycle automatically. Fish stocked is used for the survival rate.', setupSaved:'Tank setup saved',
+    historyTitle:'Log history', allTanks:'All tanks', allDates:'All dates', entries:n=>`${n} entr${n===1?'y':'ies'}`, noEntries:'No entries match this filter.',
+    hDate:'Date', hTank:'Tank', hDay:'Day', hTemp:'Temp', hPh:'pH', hDo:'DO', hNh3:'NH₃', hNo2:'NO₂', hNo3:'NO₃', hFish:'Fish', hSize:'Size g', hMort:'Died', hFeed:'Feed kg (1/2/3/4)', hTotal:'Total kg',
+    edit:'Edit', del:'Delete', confirmDel:(t,d)=>`Delete the ${t} entry from ${d}? This cannot be undone.`,
+    tankLabel:n=>`Tank ${n}`, supplierPh:'Supplier name', eg:v=>`e.g. ${v}`, showMore:n=>`Show ${n} more`,
+    moveTitle:'Move fish to another tank', moveHint:'Feed, deaths and weighings go with the fish',
+    mDate:'Date moved', mFrom:'From tank', mTo:'To tank', mChoose:'Choose a tank', mEmpty:'empty',
+    mFish:'Fish moved', mFishAll:n=>`Blank = all ${n} fish`, mFishNone:'No fish in this tank on that date',
+    mSize:'Average size (g)', mSizeHint:'If you weighed them while moving',
+    mWhen:'When', mBefore:'Before first feeding', mAfter:'After last feeding',
+    mBeforeHint:"That day's feeding in the new tank counts for these fish", mAfterHint:"That day's feeding in the old tank counts for these fish",
+    mNote:'Note (optional)', mNotePh:'e.g. weighing day, cleaning Tank 1, grading',
+    mSave:'Save move', mPvStart:'Choose the date and both tanks. When fish move, their feed, deaths and weighings go with them.',
+    pvAll:(k, a, b, since)=>`<b>${k}</b> fish (all) from ${a} to ${b}. Their feed, deaths and weighings${since ? ` since ${since}` : ''} go with them, and ${a} will be empty.`,
+    pvPart:(k, n, pct, a, b, left)=>`<b>${k}</b> of ${n} fish (${pct}%) from ${a} to ${b}. ${pct}% of the feed and deaths so far go with them; <b>${left}</b> fish stay in ${a}.`,
+    pvMerge:(b, h, tot)=>`${b} already has ${h} fish, so both groups are counted as one (<b>${tot}</b> fish) and growth and FCR start again from this weighing. If ${b}'s own fish were moved out that day, record that move too.`,
+    pvRecount:(k, n)=>`The count you typed (<b>${k}</b>) replaces the ${n} in the log.`,
+    pvCleared:(b, h)=>`The ${h} fish recorded in ${b} are treated as gone.`,
+    pvMergeToday:(b, h, tot)=>`${b} already has ${h} fish today, so both groups are counted as one (<b>${tot}</b> fish) and growth and FCR start again from this weighing. If those fish were moved out too, record that move.`,
+    pvMergeSmall:(b, h, tot)=>`${b} already has ${h} fish, so both groups are counted as one (<b>${tot}</b> fish). The bigger group keeps its growth record.`,
+    pvAsk:b=>`Answer the question above about ${b}.`,
+    pvNoCount:a=>`The log has no fish count for ${a} on that date. Type how many fish were moved.`,
+    mAllLbl:(a, n)=>`These were all the fish in ${a} — use my count instead of the ${n} in the log`,
+    mDestQ:(b, h, d)=>`${b} still shows ${h} fish (last logged ${d}). Are those fish still in the tank?`,
+    mDestQNoCount:(b, d)=>`${b} still has fish on record (last logged ${d}). Are those fish still in the tank?`,
+    mDestKeep:'Yes — still there, count both groups together', mDestMoved:'No — moved to another tank (record that move too)', mDestClear:b=>`No — ${b} was empty (harvested earlier)`,
+    needDest:b=>`Answer the question about the fish in ${b} first.`, pvMoved:b=>`Now record the move of ${b}'s own fish too (the order doesn't matter). Until then both groups are counted together.`,
+    mWarnAsk:(b, h)=>`${b} still had ${h ? h + ' ' : ''}fish on record when these fish came in, so both are counted together. If ${b}'s own fish were moved out, record that move; if ${b} was empty, edit this move.`,
+    mRecounted:n=>`counted (log had ${n})`, mGone:(b, h)=>`${b}'s earlier ${h} fish treated as gone`,
+    orphanNoFish:(tk, range, kg)=>`Feed or dead fish were logged in ${tk} (${range}${kg ? ', ' + kg + ' kg feed' : ''}), but no fish are recorded there. Set the stocking in Tank setup, or record the move that brought the fish.`,
+    oldPage:(tk, d)=>`An older copy of the farm log is still open somewhere — it saved ${tk} on ${d}. Reload the farm log on every phone and tablet (pull down or press refresh) so fish moves are counted correctly.`,
+    pvNoFish:(a, d)=>`${a} has no fish recorded on ${d}. Check the tank and the date.`, pvSame:'Choose two different tanks.',
+    needMove:'Choose the date and both tanks.', mSavedToast:(a, b)=>`Move saved ✓ ${a} → ${b}`, mUpdatedToast:'Move updated ✓', mDeletedToast:'Move deleted',
+    confirmDelMove:(a, b, d)=>`Delete the move ${a} → ${b} on ${d}? Feed and growth will be worked out as if it never happened.`,
+    mEditing:(a, b, d)=>`Editing the move ${a} → ${b} on ${d}. Change what you need, then press “Save changes”.`,
+    mListTitle:'Moves recorded', mNone:'No moves recorded yet.',
+    mQtyAll:k=>`${k} fish (all)`, mQtyPart:(k, n)=>`${k} of ${n} fish`, mRowBefore:'before feeding', mRowAfter:'after feeding', mMerged:n=>`joined ${n} fish already there`,
+    mWarnNoFish:'No fish were recorded in the first tank at that time', mWarnMore:n=>`More than the ${n} fish in the tank — counted as all of them`,
+    orphanWarn:(tk, d, range, kg)=>`Feed or dead fish were logged in ${tk} (${range}${kg ? ', ' + kg + ' kg feed' : ''}) after its fish were moved out on ${d}. If they were moved after feeding that day, edit the move and choose “After last feeding”.`,
+    orphanWarn2:(tk, d, range, kg)=>`Feed or dead fish were logged in ${tk} (${range}${kg ? ', ' + kg + ' kg feed' : ''}) after its fish were moved out on ${d}. If there are fish in ${tk}, record how they got there (Move fish or Tank setup); if not, the entry may be under the wrong tank.`,
+    barFrom:(tk, d)=>`Moved in from ${tk} on ${d}`, barMerged:(tk, d)=>`Joined by fish from ${tk} on ${d}`, barSplit:(tk, k, d)=>`${k} fish moved to ${tk} on ${d}`, barEmpty:(tk, d)=>`Empty — fish moved to ${tk} on ${d}`,
+    setupMoved:(tk, d, sd)=>`The fish here came from ${tk} on ${d}${sd ? ` (stocked ${sd})` : ''}. Only change the stocking date when you restock this tank from the hatchery.`,
+    setupEmpty:(tk, d)=>`Empty since ${d} — the fish were moved to ${tk}.`,
+    mdBefore:(list, tk)=>`Fish moved before the first feeding today: ${list}. Fill in this visit for the fish in ${tk} now.`,
+    mdAfter:list=>`Fish move after the last feeding today: ${list}. This visit's feed and dead fish are for the fish here during the day.`,
+    mSideQ:'The fish count and weighing above are for', mSideBefore:'the fish here during the day', mSideAfter:'the fish here after the move',
+    mMergedUnknown:'joined fish already there (count not known)',
+    fixBtn:'Correct', fixTitle:tk=>`Stocking of the fish now in this tank (they were stocked in ${tk}):`, fixSave:'Save', fixCancel:'Cancel', fixDone:'Stocking corrected ✓',
+    fixAfterMove:d=>`Not saved — these fish were already moved on ${d}, so they were stocked on or before that day.`,
+    fishHintEvening:(n, k, tk)=>`Blank = ${n} now · ${k} fish from ${tk} arrive after the last feeding`,
+    pvMergeUnknown:(b, tot)=>`${b} already has fish (count not known), so both groups are counted as one and growth and FCR start again from this weighing.`,
+    setupBeforeMove:(tk, d)=>`Not saved — fish moved into or out of ${tk} on ${d}. A new stocking date must be on or after that day.`,
+    setupBeforePast:(tk, d)=>`Not saved — ${tk} already had fish stocked on ${d}. A new stocking date must be after that day.`,
+    hintMove:'More fish than the log shows. Moved from another tank? Record it under “Move fish”. New fish from the hatchery? Set it in Tank setup.',
+  },
+  zh: {
+    farmLog:'养殖日志', brandSub:'现场人员数据录入', toDash:'主页 →', gateSub:'请输入访问码以记录鱼池巡查。', gatePh:'访问码', gateBtn:'进入养殖日志', gateErr:'访问码错误，请重试。',
+    synced:'已同步', syncFail:'同步失败', syncOff:'未连接', syncSaving:'正在保存…', soundOff:'保存提示音：关', soundOn:'保存提示音：开',
+    logDate:'巡查日期', progTitle:(n,d)=>`${d}已记录 ${n}/13 个鱼池`, progToday:'今天', progOn:d=>`${d} `, progDone:'所有鱼池都已记录——做得好！', progLeft:list=>`尚未记录：${list}`,
+    step1:'选择鱼池', step1Hint:'打勾的鱼池在此日期已记录', step2:'记录巡查数据', step2Hint:'只填写实际测量的项目，其余留空',
+    inTank:'尾在池', lastSize:'上次称重', lastVisit:'最近巡查', dayWord:'第', never:'从未', fishWord:'尾',
+    waterQuality:'水质', dayOfCycle:'养殖天数', dayAuto:d=>`按放苗日期自动计算：第 ${d} 天`,
+    pTemp:'水温 (°C)', pPh:'pH值', pDox:'溶解氧 (mg/L)', pAmmonia:'氨氮 TAN (mg/L)', pNo2:'亚硝酸盐 NO₂ (mg/L)', pNo3:'硝酸盐 NO₃ (mg/L)',
+    ideal:r=>`理想 ${r}`, stGood:'正常', stWarn:'注意', stCrit:'警报', outOfRange:'数值异常——请检查',
+    stockTitle:'鱼只数量与称重', fishBefore:'今天死亡前的鱼只数', mortality:'捞出死鱼数', avgSize:'平均体重 (克)',
+    fishHintCur:n=>`留空 = 目前数量 (${n})`, fishHintNone:'请输入放苗数量', sizeHint:'仅在今天有称重时填写',
+    sizeCmp:(g,d)=>`较上次称重 ${g>0?'+':''}${g} 克（${d}）`,
+    fishResult:(a,m,r)=>`保存后池内鱼只：<b>${a}</b> − <b>${m}</b> = <b>${r}</b>`, fishResultNoMort:r=>`保存后池内鱼只：<b>${r}</b>`,
+    biomass:kg=>` · 生物量约 <b>${kg} kg</b>`,
+    feedTitle:'投喂（4 次）', feedPct:'投喂率（占生物量 %）', pctHint:p=>`此体重建议：${p}%`, pctNone:'称重后可获得建议',
+    splitBtn:'按建议量平均填入 4 次', sess1:'投喂 1 (kg)', sess2:'投喂 2 (kg)', sess3:'投喂 3 (kg)', sess4:'投喂 4 (kg)',
+    feedAlready:kg=>`此鱼池当天已记录：${kg} kg`,
+    cmpTotal:(kg,rm)=>`本次记录：${kg} kg · RM ${rm}`, cmpSug:kg=>`当天建议约 ${kg} kg`, cmpNoSug:'暂无建议（需要鱼只数与体重）',
+    save:'保存记录', saveEdit:'保存修改', saving:'正在保存…', cancel:'取消编辑',
+    editing:(t,d)=>`正在编辑 ${t} · ${d}。修改后请按“保存修改”。`,
+    msgReady:t=>`准备保存：${t}`, needSomething:'尚未填写任何内容——请至少填写一项数据、数量或投喂。',
+    badValue:f=>`${f} 数值异常——请检查。`, needDate:'请选择巡查日期。',
+    savedToast:t=>`已保存 ✓ ${t}`, updatedToast:t=>`已更新 ✓ ${t}`, deletedToast:'记录已删除', failToast:'保存失败——请检查网络连接',
+    nextWeigh:'下次称重', wDueToday:'今天到期', wLate:n=>`逾期 ${n} 天`, wIn:(d, n)=>`${d}（${n} 天后）`,
+    weighNow:'今天需要称重——请抽 20–30 尾鱼称重并填写平均体重', progWeigh:list=>` · 需要称重：${list}`, weighBadge:'称重',
+    failOffline:'未保存——无法连接云端。请检查网络后再次按保存。', failFull:'未保存——云端表格已满。请通知主管把 Apps Script 更新到第 2 版。',
+    storeFlag:p=>`云端存储已用 ${p}%。请通知主管把 Apps Script 更新到第 2 版，以确保记录能继续保存。`, loadFail:'无法载入养殖数据——请检查网络连接，正在重试…',
+    flagCrit:list=>`紧急：${list}。请立即通知主管。`, flagWarn:list=>`请留意：${list}。`,
+    setupTitle:'鱼池设置', setupHint:'重新放苗时更新——自动保存', colTank:'鱼池', colSupplier:'供应商', colStockDate:'放苗日期', colStocked:'放苗数量',
+    setupNote:'填写放苗日期后，系统会自动计算养殖天数。放苗数量用于计算存活率。', setupSaved:'鱼池设置已保存',
+    historyTitle:'记录历史', allTanks:'所有鱼池', allDates:'所有日期', entries:n=>`共 ${n} 条记录`, noEntries:'没有符合条件的记录。',
+    hDate:'日期', hTank:'鱼池', hDay:'天数', hTemp:'水温', hPh:'pH', hDo:'溶氧', hNh3:'氨氮', hNo2:'NO₂', hNo3:'NO₃', hFish:'鱼只', hSize:'体重 g', hMort:'死亡', hFeed:'投喂 kg (1/2/3/4)', hTotal:'合计 kg',
+    edit:'编辑', del:'删除', confirmDel:(t,d)=>`确定删除 ${t} 在 ${d} 的记录？此操作无法撤销。`,
+    tankLabel:n=>`鱼池 ${n}`, supplierPh:'供应商名称', eg:v=>`例如 ${v}`, showMore:n=>`再显示 ${n} 条`,
+    moveTitle:'转池', moveHint:'投喂、死亡与称重记录会跟着鱼走',
+    mDate:'转池日期', mFrom:'从鱼池', mTo:'转到鱼池', mChoose:'选择鱼池', mEmpty:'空池',
+    mFish:'转移鱼只数', mFishAll:n=>`留空 = 全部 ${n} 尾`, mFishNone:'该日期此鱼池没有鱼',
+    mSize:'平均体重 (克)', mSizeHint:'转池时有称重才填写',
+    mWhen:'转池时间', mBefore:'第一次投喂前', mAfter:'最后一次投喂后',
+    mBeforeHint:'当天在新鱼池的投喂算在这批鱼上', mAfterHint:'当天在原鱼池的投喂算在这批鱼上',
+    mNote:'备注（可选）', mNotePh:'例如：称重日、洗鱼池 1、分级',
+    mSave:'保存转池', mPvStart:'请选择日期和两个鱼池。鱼转池后，投喂、死亡与称重记录会跟着鱼走。',
+    pvAll:(k, a, b, since)=>`从${a} 转 <b>${k}</b> 尾（全部）到${b}。这批鱼${since ? `自 ${since} 起` : ''}的投喂、死亡与称重记录会一起转过去，${a} 将变成空池。`,
+    pvPart:(k, n, pct, a, b, left)=>`从${a} 转 <b>${k}</b> 尾（共 ${n} 尾，${pct}%）到${b}。目前为止 ${pct}% 的投喂与死亡记录随鱼转过去；${a} 留下 <b>${left}</b> 尾。`,
+    pvMerge:(b, h, tot)=>`${b} 已有 ${h} 尾，两批鱼将合并计算（共 <b>${tot}</b> 尾），生长与饲料系数从这次称重重新计算。如果${b} 原有的鱼当天也转走了，请把那次转池也记录下来。`,
+    pvRecount:(k, n)=>`您填写的数量（<b>${k}</b> 尾）将取代记录中的 ${n} 尾。`,
+    pvCleared:(b, h)=>`${b} 记录中的 ${h} 尾将视为已不在池内。`,
+    pvMergeToday:(b, h, tot)=>`${b} 当天已有 ${h} 尾，两批鱼将合并计算（共 <b>${tot}</b> 尾），生长与饲料系数从这次称重重新计算。如果这些鱼也转走了，请记录那次转池。`,
+    pvMergeSmall:(b, h, tot)=>`${b} 已有 ${h} 尾，两批鱼将合并计算（共 <b>${tot}</b> 尾）。数量较多那批鱼的生长记录会继续沿用。`,
+    pvAsk:b=>`请回答上面关于${b} 的问题。`,
+    pvNoCount:a=>`${a} 在该日期没有鱼只数量记录。请填写转移的鱼只数。`,
+    mAllLbl:(a, n)=>`这些就是${a} 的全部鱼——用我填写的数量取代记录中的 ${n} 尾`,
+    mDestQ:(b, h, d)=>`${b} 的记录中还有 ${h} 尾鱼（最后记录：${d}）。这些鱼还在池内吗？`,
+    mDestQNoCount:(b, d)=>`${b} 的记录中还有鱼（最后记录：${d}）。这些鱼还在池内吗？`,
+    mDestKeep:'还在——两批鱼合并计算', mDestMoved:'不在——已转到别的鱼池（也要记录那次转池）', mDestClear:b=>`不在——${b} 原本是空池（之前已收成）`,
+    needDest:b=>`请先回答关于${b} 原有鱼只的问题。`, pvMoved:b=>`请也记录${b} 原有鱼只的转池（先后次序不影响）。在那之前，两批鱼会合并计算。`,
+    mWarnAsk:(b, h)=>`这批鱼转入时，${b} 的记录中还有${h ? ' ' + h + ' 尾' : ''}鱼，因此合并计算。如果${b} 原有的鱼已转走，请记录那次转池；如果${b} 当时是空池，请编辑这次转池。`,
+    mRecounted:n=>`已点数（记录为 ${n} 尾）`, mGone:(b, h)=>`${b} 原有的 ${h} 尾视为已不在`,
+    orphanNoFish:(tk, range, kg)=>`${tk} 记录了投喂或死鱼（${range}${kg ? '，投喂 ' + kg + ' kg' : ''}），但没有鱼只记录。请在鱼池设置中填写放苗，或记录这些鱼是从哪个鱼池转来的。`,
+    oldPage:(tk, d)=>`有一台设备仍在使用旧版养殖日志——它保存了 ${d} 的${tk} 记录。请在每台手机和平板上重新载入养殖日志（下拉刷新或按刷新），转池才能正确计算。`,
+    pvNoFish:(a, d)=>`${a} 在 ${d} 没有鱼只记录，请检查鱼池和日期。`, pvSame:'请选择两个不同的鱼池。',
+    needMove:'请选择日期和两个鱼池。', mSavedToast:(a, b)=>`已保存转池 ✓ ${a} → ${b}`, mUpdatedToast:'转池记录已更新 ✓', mDeletedToast:'转池记录已删除',
+    confirmDelMove:(a, b, d)=>`确定删除 ${d} 从${a} 到${b} 的转池记录？投喂与生长将按没有转池重新计算。`,
+    mEditing:(a, b, d)=>`正在编辑 ${d} 从${a} 到${b} 的转池记录。修改后请按“保存修改”。`,
+    mListTitle:'转池记录', mNone:'尚无转池记录。',
+    mQtyAll:k=>`${k} 尾（全部）`, mQtyPart:(k, n)=>`${k} 尾（共 ${n} 尾）`, mRowBefore:'投喂前', mRowAfter:'投喂后', mMerged:n=>`与池内原有 ${n} 尾合并`,
+    mWarnNoFish:'当时原鱼池没有鱼只记录', mWarnMore:n=>`超过池内的 ${n} 尾——按全部转移计算`,
+    orphanWarn:(tk, d, range, kg)=>`${tk} 的鱼已在 ${d} 转走，之后仍记录了投喂或死鱼（${range}${kg ? '，投喂 ' + kg + ' kg' : ''}）。如果当天是投喂后才转池，请编辑转池记录并选择“最后一次投喂后”。`,
+    orphanWarn2:(tk, d, range, kg)=>`${tk} 的鱼已在 ${d} 转走，之后仍记录了投喂或死鱼（${range}${kg ? '，投喂 ' + kg + ' kg' : ''}）。如果${tk} 里有鱼，请记录这些鱼从哪里来（转池或鱼池设置）；如果没有，这条记录可能选错了鱼池。`,
+    barFrom:(tk, d)=>`${d} 从${tk} 转入`, barMerged:(tk, d)=>`${d} 并入${tk} 转来的鱼`, barSplit:(tk, k, d)=>`${d} 转 ${k} 尾到${tk}`, barEmpty:(tk, d)=>`空池——鱼已于 ${d} 转到${tk}`,
+    setupMoved:(tk, d, sd)=>`池内的鱼于 ${d} 从${tk} 转入${sd ? `（放苗日期 ${sd}）` : ''}。只有从鱼苗场重新放苗时才需要修改放苗日期。`,
+    setupEmpty:(tk, d)=>`自 ${d} 起为空池——鱼已转到${tk}。`,
+    mdBefore:(list, tk)=>`今天第一次投喂前已转池：${list}。本次记录请填写${tk} 现在的鱼。`,
+    mdAfter:list=>`今天最后一次投喂后转池：${list}。本次记录的投喂与死鱼算在白天在池内的鱼。`,
+    mSideQ:'上面的鱼只数与称重是：', mSideBefore:'白天在池内的鱼', mSideAfter:'转池后在池内的鱼',
+    mMergedUnknown:'与池内原有的鱼合并（数量不明）',
+    fixBtn:'更正', fixTitle:tk=>`池内这批鱼的放苗记录（在${tk} 放苗）：`, fixSave:'保存', fixCancel:'取消', fixDone:'放苗记录已更正 ✓',
+    fixAfterMove:d=>`未保存——这批鱼已于 ${d} 转池，放苗日期必须是当天或之前。`,
+    fishHintEvening:(n, k, tk)=>`留空 = 目前 ${n} 尾 · ${tk} 的 ${k} 尾将在最后一次投喂后转入`,
+    pvMergeUnknown:(b, tot)=>`${b} 已有鱼（数量不明），两批鱼将合并计算，生长与饲料系数从这次称重重新计算。`,
+    setupBeforeMove:(tk, d)=>`未保存——${tk} 于 ${d} 有鱼转入或转出。新的放苗日期必须是当天或之后。`,
+    setupBeforePast:(tk, d)=>`未保存——${tk} 于 ${d} 已放过苗。新的放苗日期必须在那天之后。`,
+    hintMove:'鱼只数比记录多。是从别的鱼池转来的吗？请在“转池”中记录。是鱼苗场的新苗吗？请在鱼池设置中填写。',
+  }
+};
+function t(key, ...a){ const v = I18N[lang][key] !== undefined ? I18N[lang][key] : I18N.en[key]; return typeof v === 'function' ? v(...a) : (v !== undefined ? v : key); }
+function tankLabel(n){ const m = /^Tank (\d+)$/.exec(n); return m ? t('tankLabel', m[1]) : n; }
+function applyI18n(){
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.getElementById('langToggle').textContent = lang === 'en' ? '中文' : 'EN';
+  document.getElementById('soundText').textContent = soundEnabled ? t('soundOn') : t('soundOff');
+  document.getElementById('saveBtn').textContent = editingId !== null ? t('saveEdit') : t('save');
+}
+
+/* ================= helpers ================= */
+const isNum = v => v !== '' && v !== null && v !== undefined && !Number.isNaN(Number(v));
+const val = id => document.getElementById(id).value;
+const r3 = v => Math.round(Number(v) * 1000) / 1000;          // keep what staff typed (e.g. 0.75), only trims float noise
+const fmtF = v => Number(v || 0).toLocaleString('en-US', {maximumFractionDigits:2});
+function isoLocal(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayLocal(){ return isoLocal(new Date()); }
+function dayDiff(a, b){ return Math.round((Date.parse(b+'T00:00:00') - Date.parse(a+'T00:00:00')) / 86400000); }
+function fmtDate(d){ if(!d) return '—'; return new Date(d+'T00:00:00').toLocaleDateString(lang==='zh'?'zh-CN':'en-GB', {day:'numeric', month:'short', year:'numeric'}); }
+function fmtN(v, dec){ if(v === null || v === undefined || Number.isNaN(v)) return '—'; return Number(v).toLocaleString('en-US', {minimumFractionDigits:dec||0, maximumFractionDigits:dec||0}); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function sortEntries(a){ return a.sort((x,y) => (x.date||'').localeCompare(y.date||'') || x.id - y.id); }
+function entriesFor(n){ return sortEntries(logEntries.filter(e => e.pond === n)); }
+function getLS(k, d){ try{ const v = localStorage.getItem(k); return v === null ? d : v; }catch(e){ return d; } }
+function setLS(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+function toast(msg, err){ const el = document.getElementById('toast'); el.textContent = msg; el.className = 'toast show' + (err ? ' err' : ''); clearTimeout(el._t); el._t = setTimeout(() => el.className = 'toast' + (err ? ' err' : ''), 2600); }
+function beep(times){
+  if(!soundEnabled || !audioCtx) return;
+  let tt = audioCtx.currentTime;
+  for(let i = 0; i < times; i++){ const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(0.3, tt+0.02); g.gain.exponentialRampToValueAtTime(0.0001, tt+0.28);
+    o.connect(g).connect(audioCtx.destination); o.start(tt); o.stop(tt+0.3); tt += 0.4; }
+}
+/* feed price comes from the shared Farm settings (set on the dashboard); RM84 per 20 kg bag if not set */
+function costPerKg(){ const c = (stock && stock._settings) || {}; const p = Number(c.bagPrice), k = Number(c.bagKg); return p > 0 && k > 0 ? p / k : 84 / 20; }
+function weighSettings(){
+  const c = (stock && stock._settings) || {}, g = (k, d) => Number(c[k]) > 0 ? Number(c[k]) : d;
+  return {early:g('weighEarly', 10), earlyDays:g('weighEarlyDays', 60), later:g('weighLater', 10)};
+}
+/* ---------- which fish are in a tank, and their history: worked out by the fish-group engine below ---------- */
+function fgGet(){ if(!FG) FG = fgBuild(logEntries, stock, TANKS); return FG; }
+function fgRefresh(){ FG = null; }
+function grp(n, d){ return fgGet().group(n, d || todayLocal()); }
+function cycleOf(n, d){ return fgGet().hist(n, d || todayLocal()); }
+/* fish in a tank at the end of a day */
+function fishAt(n, d){
+  const F = fgGet(), c = F.countBefore(n, F.endOf(d));
+  if(c !== null) return Math.round(c);
+  const s = stock[n] || {};                                   // fish stocked but no stocking date yet
+  return !fgIsDate(s.stockDate) && isNum(s.initialFish) && Number(s.initialFish) > 0 ? Number(s.initialFish) : null;
+}
+function currentFish(n){ return fishAt(n, todayLocal()); }
+/* fish in the tank just before an entry (saved now, or entry id) on a day: the latest count of the fish there, else the stocked number */
+function fishBefore(n, d, id, exceptId){
+  const F = fgGet(), c = F.countBefore(n, fgPos(d, 1, fgEntrySeq({id})), exceptId);
+  if(c !== null) return Math.round(c);
+  const s = stock[n] || {};
+  if(!fgIsDate(s.stockDate) && isNum(s.initialFish) && Number(s.initialFish) > 0) return Number(s.initialFish);   // fish stocked, no date yet
+  if(!F.tracked(n) && !entriesFor(n).length && s.fishFrom !== 'log' && isNum(s.totalFish)) return Number(s.totalFish);   // very old data: count only in the tank row
+  return 0;                                         // no fish known here at that time
+}
+function lastWeighing(n, exceptId, d){ const es = cycleOf(n, d).filter(e => isNum(e.avgSize) && Number(e.avgSize) > 0 && e.id !== exceptId); return es.length ? es[es.length-1] : null; }
+/* stocking date of the fish in the tank on a day (it moves with them) */
+function stockedOn(n, d){ const g = grp(n, d); return g && g.origin.date && g.origin.date <= d ? g.origin.date : null; }
+/* every 10 days for the first 60 days after stocking (Farm settings on the dashboard can change this) */
+function weighDue(n, d){
+  const es = cycleOf(n, d), sd = stockedOn(n, d) || (es.length ? es[0].date : null);
+  if(!sd || !(fishAt(n, d) > 0)) return null;
+  const W = weighSettings(); let last = null;
+  es.forEach(e => { if(isNum(e.avgSize) && Number(e.avgSize) > 0) last = e.date; });
+  const base = last || sd, every = dayDiff(sd, base) < W.earlyDays ? W.early : W.later, due = addDays(base, every);
+  return {due, left:dayDiff(d, due)};
+}
+function addDays(d, n){ const x = new Date(d + 'T00:00:00'); x.setDate(x.getDate() + n); return isoLocal(x); }
+
+/* keep the stock rows in step with the log (the dashboard and older pages read them) */
+function recomputeStock(n){
+  const s = stock[n] || (stock[n] = {supplier:'', totalFish:0, avgSizeG:0});
+  const F = fgGet(), today = todayLocal(), g = F.group(n, today), es = entriesFor(n);
+  const c = fishAt(n, today);
+  if(c !== null){ s.totalFish = c; s.fishFrom = 'log'; }
+  else if(isNum(s.initialFish) && Number(s.initialFish) > 0) s.totalFish = Number(s.initialFish);
+  else if(s.fishFrom === 'log') s.totalFish = 0;              // e.g. a move into this tank was deleted
+  if(g){ const w = lastWeighing(n, undefined, today); if(w) s.avgSizeG = Number(w.avgSize); else if(g.origin.date || g.path.length > 1) s.avgSizeG = ''; }
+  else if(F.emptied(n, today)) s.avgSizeG = '';
+  // legacy "latest reading" object kept up to date for older pages
+  let m = null;
+  es.forEach(e => { if(!WATER.some(p => isNum(e[p.k]))) return; const p0 = m || {}; m = {date:e.date}; WATER.forEach(p => m[p.k] = isNum(e[p.k]) ? Number(e[p.k]) : (p0[p.k] !== undefined ? p0[p.k] : null)); });
+  readings[n] = m;
+}
+/* any change can affect other tanks (fish that moved), so every tank is brought up to date */
+function recomputeAll(){ fgRefresh(); TANKS.forEach(recomputeStock); }
+
+/* ================= fish groups — the same code is in the farm log and the dashboard =================
+   Feed, deaths and weighings belong to the FISH, not to the tank. A group of fish starts when a tank
+   is stocked (Tank setup) and keeps its whole history when it is moved to another tank:
+   - all fish moved: the group carries on in the new tank, history and all (a count typed while moving
+     becomes the new count);
+   - some fish moved: the history so far is shared out by number of fish (8,000 of 20,000 fish take
+     40% of the feed and deaths so far, the 12,000 left behind keep 60%);
+   - fish moved into a tank that still has fish: the two groups become one. Feed and deaths add up;
+     growth and FCR are measured again from that day (a few stragglers joining a big group do not
+     restart the big group's growth record). If the fish already there were not put there that same
+     day, staff say on the move whether they are still there; fish they say are gone are no longer counted.
+   Each day runs in this order: stockings, moves "before first feeding", the day's entries in the order
+   they were saved, moves "after last feeding".
+   - A move takes the fish that are in the tank at that moment. A tank that was empty gives the fish
+     stocked into it that day (a delivery split between tanks); a tank restocked on the day its fish
+     move out gets the new fish after the move.
+   - Moves on one day go in an order that keeps the fish where they really went: moves into empty tanks
+     first, then moves into tanks whose own fish are staying; tanks that swap fish (1 → 4 and 4 → 1, or
+     round three tanks, with or without grading) swap at the same moment.
+   - Moves "before first feeding": that day's entries describe the tanks after the move; only a weighing
+     typed for a tank whose fish all left goes to the group it matches by size (the fish that left, or
+     the fish there now).
+   - Moves "after last feeding": the day's feed and deaths in those tanks belong to the fish that were
+     there during the day; a typed count or weighing belongs to the fish before or after the move, as
+     staff said on the entry, or else whichever it matches (a restock that evening counts as "after").
+   - "0 fish" typed on a day fish are moved into a tank describes it before they came: old fish still on
+     record there are taken as gone, and the 0 does not wipe the fish that arrive.
+   Fish count = the last count staff typed (or the stocked / moved number) minus deaths since. A count
+   that only carried on from the entry before is worked out again when a move comes before it. */
+const FG_SCALE = ['feedKg', 'feedKg1', 'feedKg2', 'feedKg3', 'feedKg4', 'mortality'];
+const fgNum = v => v !== '' && v !== null && v !== undefined && !Number.isNaN(Number(v)) ? Number(v) : null;
+const fgIsDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && v >= '2000-01-01' && v <= '2100-12-31';
+function fgPos(date, phase, seq){ return date + '|' + phase + '|' + String(Math.max(0, Math.floor(Number(seq) || 0))).padStart(16, '0'); }
+/* the count an older entry was first saved with (kept as savedFish if it was edited later) */
+const fgFirst = e => fgNum(e.savedFish) !== null ? fgNum(e.savedFish) : fgNum(e.totalFish);
+function fgEntrySeq(e){ const id = Number(e.id) || 0; return id > 1e12 ? id : 9e15 + Math.max(0, id); }
+function fgLocalDay(ms){ const d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function fgDays(a, b){ return Math.round((Date.parse(b + 'T00:00:00') - Date.parse(a + 'T00:00:00')) / 86400000); }
+function fgMoveList(stock, tanks){
+  const list = stock && Array.isArray(stock._moves) ? stock._moves : [];
+  return list.filter(m => m && fgIsDate(m.date) && tanks.includes(m.from) && tanks.includes(m.to) && m.from !== m.to);
+}
+/* every stocking from the hatchery: the current Tank setup row plus earlier ones kept in "past" */
+function fgStockings(stock, tanks){
+  const out = [];
+  tanks.forEach(n => {
+    const s = (stock && stock[n]) || {}, cur = fgIsDate(s.stockDate) ? s.stockDate : null, seen = new Map();
+    const past = Array.isArray(s.past) ? s.past.filter(p => p && fgIsDate(p.stockDate) && (!cur || p.stockDate < cur)) : [];
+    past.concat(cur ? [s] : []).forEach(x => {
+      // saved on the stocking day itself: entries saved earlier that day may belong to the fish there before
+      const at = Number(x.stockSetAt) || 0;
+      seen.set(x.stockDate, {tank:n, date:x.stockDate, fish: fgNum(x.initialFish) > 0 ? fgNum(x.initialFish) : null, supplier: x.supplier || '',
+        setAt: at > 1e12 && fgLocalDay(at) === x.stockDate ? at : 0});
+    });
+    out.push(...seen.values());
+  });
+  return out;
+}
+/* A stocking kept with a move (src) is only used when the moved fish have lost theirs (an older page restocked
+   the tank over it, or it was cleared while fish were still being logged there): they start again from it. */
+function fgBuild(entries, stock, tanks){
+  const base = fgStockings(stock, tanks);
+  let F = fgRun(entries, stock, tanks, base);
+  const extra = [];
+  F.moves.forEach(m => {
+    const i = F.info[m.id], o = m.src;
+    if(!i || !o || !fgIsDate(o.date) || !tanks.includes(o.tank) || o.date > m.date) return;
+    const lost = i.lostStock || (i.warn === 'noFish' && F.orphans.some(x => x.e.pond === m.from && x.e.date >= o.date && x.e.date <= m.date));
+    if(!lost || base.concat(extra).some(s => s.tank === o.tank && s.date === o.date)) return;
+    extra.push({tank:o.tank, date:o.date, fish: fgNum(o.fish) > 0 ? fgNum(o.fish) : null, supplier:o.supplier || '', setAt:0, kept:true});
+  });
+  if(extra.length) F = fgRun(entries, stock, tanks, base.concat(extra));
+  return F;
+}
+function fgRun(entries, stock, tanks, stockings){
+  const moves = fgMoveList(stock, tanks), info = {}, groups = [], occ = {}, orphans = [], counts = new Map();
+  tanks.forEach(n => { occ[n] = []; });
+  const movePos = m => fgPos(m.date, m.after ? 2 : 0, 1);
+  const firstMove = {}, firstIn = {};              // earliest move into or out of each tank; earliest move into a tank on a day
+  moves.forEach(m => { const p = movePos(m), k = m.to + '|' + m.date; if(!firstIn[k] || p < firstIn[k]) firstIn[k] = p;
+    [m.from, m.to].forEach(n => { if(!firstMove[n] || p < firstMove[n]) firstMove[n] = p; }); });
+  // entries per tank in saved order, to tell typed counts from carried-on ones
+  const raw = {}; tanks.forEach(n => { raw[n] = []; });
+  (entries || []).forEach(e => { if(e && fgIsDate(e.date) && raw[e.pond]) raw[e.pond].push(e); });
+  const prevStored = new Map();
+  tanks.forEach(n => {
+    raw[n].sort((a, b) => a.date.localeCompare(b.date) || (Number(a.id) || 0) - (Number(b.id) || 0));
+    let p = null; raw[n].forEach(e => { prevStored.set(e, p); const c = fgFirst(e); if(c !== null) p = c; });
+  });
+  /* is the fish count saved with this entry a real count? Before any move into or out of the tank,
+     yes (as before). After one, a count that only carried on from the entry before (it was worked out
+     by a page that did not know about the move) is worked out again; a count that jumps was typed. */
+  function trusted(e, pos){
+    if(e.fishTyped === false) return false;
+    const fi = firstIn[e.pond + '|' + e.date];
+    if(fgFirst(e) === 0 && fi && fi < pos) return false;                               // "0" was for the tank before the fish came in
+    if(!(firstMove[e.pond] && firstMove[e.pond] < pos)) return true;
+    const stored = fgFirst(e), prev = prevStored.get(e), mort = fgNum(e.mortality) || 0;
+    const carried = stored !== null && prev !== null && Math.abs(stored - Math.max(0, prev - mort)) < 0.5;
+    if(e.fishTyped === true){
+      // typed on this page: trusted, unless typed before the move was recorded and it just repeats the old count
+      const id = Number(e.id) || 0;
+      return !(carried && moves.some(m => (m.from === e.pond || m.to === e.pond) && Number(m.id) > id && movePos(m) < pos));
+    }
+    if(stored === null || prev === null) return false;
+    return !carried;
+  }
+  // "Fish stocked" filled in Tank setup without a stocking date
+  const setupNoDate = n => { const s = (stock && stock[n]) || {}; return !fgIsDate(s.stockDate) && fgNum(s.initialFish) > 0 ? fgNum(s.initialFish) : null; };
+  let gid = 0;
+  const newGroup = (origin, hist, extra) => { const g = Object.assign({id:++gid, origin, hist:hist || [], count:null, size:null, sizeDate:null, merged:false, path:[]}, extra || {}); groups.push(g); return g; };
+  const last = n => occ[n].length ? occ[n][occ[n].length - 1] : null;
+  const cur = n => { const o = last(n); return o ? o.g : null; };
+  const hasFish = n => { const g = cur(n); return !!g && g.count !== 0; };              // fish there (count may be unknown)
+  const lastSeen = g => { let d = g.origin.date || ''; g.path.forEach(p => { if(p.from > d) d = p.from; }); if(g.hist.length && g.hist[g.hist.length - 1].date > d) d = g.hist[g.hist.length - 1].date; return d; };
+  function setOcc(n, g, pos, cause, m){ const o = last(n); if(o) o.to = pos; occ[n].push({from:pos, to:null, g, cause, m:m || null}); }
+  const byPos = (a, b) => a._pos < b._pos ? -1 : a._pos > b._pos ? 1 : 0;
+  // history copies for split and merged groups (kept cheap: a long-lived group can have a long history)
+  const toN = x => { if(x === '' || x === null || x === undefined) return null; const v = +x; return v === v ? v : null; };
+  const scale = (h, f) => h.map(v => { const o = Object.assign({}, v); o._scale = (v._scale || 1) * f;
+    for(let i = 0; i < FG_SCALE.length; i++){ const k = FG_SCALE[i], x = toN(v[k]); if(x !== null) o[k] = x * f; }
+    const c = toN(v.totalFish); if(c !== null) o.totalFish = c * f; return o; });
+  const carry = v => v._carry ? v : Object.assign({}, v, {avgSize:'', totalFish:'', _carry:true});   // history entries are never changed later
+  const part = (o, f) => Object.assign({}, o, {fish: o.fish !== null ? o.fish * f : null});
+  const virt = (m, tank, pos, extra) => Object.assign({id:'mv' + m.id + (tank === m.to ? 'i' : 'o'), date:m.date, pond:tank, totalFish:'', avgSize:'', mortality:0, feedKg:'', _pos:pos, _tank:tank, _move:m.id}, extra);
+  const r2 = v => Math.round(v * 100) / 100;
+
+  function doStock(s, pos){
+    const g = newGroup({tank:s.tank, date:s.date, fish:s.fish, supplier:s.supplier});
+    g.count = s.fish; g.path.push({tank:s.tank, from:s.date, how:'stock'});
+    setOcc(s.tank, g, pos, 'stock');
+  }
+  /* one saved entry, or part of it: PRE = all but the fish count, POST = only the fish count, NOSIZE = all but the weighing */
+  const WHOLE = {count:true, size:true, rest:true}, PRE = {count:false, size:true, rest:true}, NOSIZE = {count:true, size:false, rest:true},
+    REST = {count:false, size:false, rest:true}, POST = {count:true, size:true, rest:false};
+  function doEntry(e, pos, opt){
+    opt = opt || WHOLE;
+    const n = e.pond, o = last(n);
+    const trust = opt.count && trusted(e, pos), stored = opt.count ? fgNum(e.totalFish) : null, mort = opt.rest ? (fgNum(e.mortality) || 0) : 0;
+    let g = o ? o.g : null;
+    if(!g){
+      if(!opt.rest) return;                          // only the count / weighing, and the fish it was typed for have just moved out
+      // no fish known here: only a real count starts a group (older entries and "fish stocked" without a date work as before)
+      if(o && !(trust && stored > 0)){ orphans.push({e, after:o}); return; }
+      if(!o && e.fishTyped === false && setupNoDate(n) === null){ orphans.push({e, after:null}); return; }
+      g = newGroup({tank:n, date:null, fish:setupNoDate(n), supplier:(stock && stock[n] && stock[n].supplier) || ''});
+      g.count = setupNoDate(n);
+      g.path.push({tank:n, from:e.date, how:'data'});
+      setOcc(n, g, pos, 'data');
+    }
+    let c;
+    if(trust && stored !== null) c = stored;
+    else if(g.count !== null) c = Math.max(0, g.count - mort);
+    else c = e.fishTyped === false || !opt.count ? null : stored;       // left blank and nothing known yet: still unknown
+    g.count = c; counts.set(e.id, c);
+    const h = Object.assign({}, e, {totalFish: c === null ? '' : c, _pos:pos, _tank:n});
+    if(!opt.size) h.avgSize = '';
+    if(!opt.rest){ FG_SCALE.forEach(k => { h[k] = k === 'mortality' ? 0 : ''; }); h.feedPct = ''; }
+    if(opt !== WHOLE) h._piece = opt === PRE ? 'pre' : opt === POST ? 'post' : opt === REST ? 'rest' : 'nosize';
+    if(fgNum(h.avgSize) > 0){ g.size = fgNum(h.avgSize); g.sizeDate = e.date; }
+    g.hist.push(h);
+  }
+  /* a weighing for fish that have just left the tank it was typed for */
+  function doSize(g, e, pos){
+    g.size = fgNum(e.avgSize); g.sizeDate = e.date;
+    g.hist.push(Object.assign({}, e, {totalFish: g.count === null ? '' : g.count, mortality:0, feedKg:'', feedKg1:'', feedKg2:'', feedKg3:'', feedKg4:'', feedPct:'', _pos:pos, _tank:e.pond, _piece:'size'}));
+  }
+  let gone = {};                                   // tank -> fish that all moved out of it before the first feeding today
+  /* a move in two halves, so tanks that swap fish can take both groups out before putting them back */
+  function takeOut(m, pos){
+    const S = m.from, G = cur(S);
+    const inf = info[m.id] = {id:m.id, pos, k:0, all:false, before:null, merge:false, into:0, warn:null, cleared:0, clearedWhy:null,
+      destHas:false, destFish:0, destToday:false, destSeen:null, ask:false, small:false, src:null, lostStock:false};
+    const want = fgNum(m.fish) > 0 ? Math.round(fgNum(m.fish)) : null, size = fgNum(m.size) > 0 ? fgNum(m.size) : null;
+    if(!G || G.count === 0){ inf.warn = 'noFish'; return null; }                          // nothing to move: no effect
+    inf.before = G.count;
+    if(G.origin.date) inf.src = {tank:G.origin.tank, date:G.origin.date, fish:G.origin.fish, supplier:G.origin.supplier};
+    else inf.lostStock = true;
+    let P;
+    // the whole group moves (a move saved without the "all the fish" answer counts as all from 97% up)
+    if(!(G.count > 0) || !want || m.all === true || want >= G.count || (m.all === undefined && want >= G.count * 0.97)){
+      P = G; inf.all = true; inf.k = want || G.count;
+      if(!(G.count > 0)) inf.warn = 'noCount';
+      else if(want && want !== G.count) inf.warn = 'recount';
+      setOcc(S, null, pos, 'out', m);
+      if(!m.after) gone[S] = P;
+    } else {
+      const f = want / G.count, keep = {path:G.path.slice(), size:G.size, sizeDate:G.sizeDate, merged:G.merged, parent:G};
+      P = newGroup(part(G.origin, f), scale(G.hist, f), Object.assign({}, keep));
+      const R = newGroup(part(G.origin, 1 - f), scale(G.hist, 1 - f), Object.assign({}, keep));
+      R.count = G.count - want; inf.k = want;
+      // graded out with a weighing: the fish left behind are worked out from the tank's weighing of the last 3 days
+      let rs = '';
+      if(size !== null && G.size > 0 && G.sizeDate && fgDays(G.sizeDate, m.date) <= 3){
+        const v = (G.size * G.count - size * want) / R.count;
+        if(v >= G.size * 0.4 && v <= G.size * 2.5){ rs = r2(v); R.size = rs; R.sizeDate = m.date; }
+      }
+      R.path = R.path.concat([{tank:S, from:m.date, how:'split', move:m.id, toTank:m.to, k:want}]);
+      R.hist.push(virt(m, S, pos, {totalFish:R.count, avgSize:rs, _est:rs !== '', _out:m.to, _k:want}));
+      setOcc(S, R, pos, 'split', m);
+    }
+    return P;
+  }
+  /* fish already in the tank that were put there that same day (stocked, moved in, or left behind by a split) */
+  const today = (n, d) => { const o = last(n); return !!(o && o.g && o.from.slice(0, 10) === d); };
+  function putIn(m, P, pos){
+    const T = m.to, inf = info[m.id], k = inf.k || null, size = fgNum(m.size) > 0 ? fgNum(m.size) : null;
+    let H = cur(T);
+    if(H && H.count !== 0){
+      inf.destHas = true; inf.destFish = H.count; inf.destToday = today(T, m.date); inf.destSeen = lastSeen(H);
+      if(!inf.destToday && m.clearTo){                                                      // staff: the old fish there are gone
+        inf.cleared = H.count; inf.clearedWhy = 'staff';
+        setOcc(T, null, pos, 'cleared', m); H = null;
+      } else if(!inf.destToday && !m.keepTo) inf.ask = true;                                // counted together until staff say otherwise
+    } else H = null;
+    if(H){                                                                                  // fish already in the tank: one group
+      inf.merge = true; inf.into = H.count;
+      const add = k !== null ? k : 0, hc = H.count !== null ? H.count : 0, dom = add > hc ? P : H, cnt = hc + add;
+      // average size of everything now in the tank (a size typed on the move is the size of the fish moved in)
+      const pSize = size !== null ? size : P.size, hSize = H.size;
+      const sz = hSize && pSize && add && hc ? (hSize * hc + pSize * add) / cnt : (hSize || pSize || null);
+      // a few stragglers (under 5%) joining a big group: the big group keeps its growth series
+      const small = cnt > 0 && Math.min(add, hc) / cnt < 0.05, minor = dom === P ? H : P;
+      inf.small = small;
+      const hist = small ? dom.hist.concat(minor.hist.map(carry)).sort(byPos) : H.hist.concat(P.hist).map(carry).sort(byPos);
+      const M = newGroup({tank:dom.origin.tank, date:dom.origin.date, fish: H.origin.fish !== null && P.origin.fish !== null ? H.origin.fish + P.origin.fish : null, supplier:dom.origin.supplier},
+        hist, {merged:!small, parts:[H, P], path:dom.path.concat([{tank:T, from:m.date, how:'merge', move:m.id, fromTank:m.from, k}])});
+      M.count = cnt; if(sz !== null){ M.size = sz; M.sizeDate = m.date; }
+      const pt = small ? (dom === P && size !== null ? size : '') : (sz !== null ? r2(sz) : '');
+      M.hist.push(virt(m, T, pos, {totalFish:cnt, avgSize:pt, _in:m.from, _k:k}));
+      setOcc(T, M, pos, 'merge', m);
+    } else {
+      P.count = k; if(size !== null){ P.size = size; P.sizeDate = m.date; }
+      P.path = P.path.concat([{tank:T, from:m.date, how:'move', move:m.id, fromTank:m.from, k}]);
+      P.hist.push(virt(m, T, pos, {totalFish: k !== null ? k : '', avgSize: size !== null ? size : '', _in:m.from, _k:k}));
+      setOcc(T, P, pos, 'move', m);
+    }
+  }
+  /* the moves of one day and part of the day, in an order that keeps the fish where they really went */
+  function doSlot(list, D, ph, seq){
+    const slot = list.slice().sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+    const numbered = m => fgNum(m.fish) > 0 && m.all !== true;
+    const waits = m => !numbered(m) && slot.some(x => x !== m && x.from === m.from && numbered(x));   // "all the rest" waits for numbered moves out of the same tank
+    const leaving = n => slot.some(x => x.from === n);                                                // fish still to move out of n
+    // would join fish already there (fish staff called gone do not count, unless they are moving out today too)
+    const joins = m => hasFish(m.to) && (!(m.clearTo && !today(m.to, D)) || leaving(m.to));
+    const ready = m => hasFish(m.from) && !waits(m);
+    // everyone in the list leaves (numbered moves first), then everyone arrives
+    const run = (ms, pos) => {
+      ms.sort((a, b) => (numbered(a) ? 0 : 1) - (numbered(b) ? 0 : 1) || (Number(a.id) || 0) - (Number(b.id) || 0));
+      const outs = ms.map(m => { slot.splice(slot.indexOf(m), 1); return takeOut(m, pos); });
+      ms.forEach((m, i) => { if(outs[i]) putIn(m, outs[i], pos); });
+    };
+    // tanks swapping fish round a loop
+    const loop = () => {
+      for(const s0 of slot){
+        if(!hasFish(s0.from) || !joins(s0)) continue;
+        const path = [s0];
+        const walk = at => {
+          if(at === s0.from) return true;
+          if(path.length >= slot.length) return false;
+          for(const nx of slot){ if(nx.from !== at || path.includes(nx) || !hasFish(nx.from)) continue; path.push(nx); if(walk(nx.to)) return true; path.pop(); }
+          return false;
+        };
+        if(walk(s0.to)) return path;
+      }
+      return null;
+    };
+    while(slot.length){
+      let m = slot.find(x => ready(x) && !joins(x));                                    // into an empty tank
+      if(!m){
+        const cyc = loop();
+        if(cyc){
+          // with any other fish leaving those tanks, and fish leaving the tanks they go to (graded rotations)
+          const set = new Set(cyc);
+          for(let grew = true; grew;){
+            grew = false;
+            const froms = new Set([...set].map(x => x.from)), tos = new Set([...set].map(x => x.to));
+            slot.forEach(x => { if(!set.has(x) && (froms.has(x.from) || (tos.has(x.from) && hasFish(x.from)))){ set.add(x); grew = true; } });
+          }
+          run([...set], fgPos(D, ph, seq++));
+          continue;
+        }
+        m = slot.find(x => ready(x) && !leaving(x.to)) || slot.find(ready) || slot.find(x => hasFish(x.from)) || slot[0];
+      }
+      run([m], fgPos(D, ph, seq++));
+    }
+    return seq;
+  }
+
+  /* day by day */
+  const days = new Map(), dayOf = d => { if(!days.has(d)) days.set(d, {st:[], es:[], m0:[], m2:[]}); return days.get(d); };
+  stockings.forEach(s => dayOf(s.date).st.push(s));
+  tanks.forEach(n => raw[n].forEach(e => dayOf(e.date).es.push(e)));
+  moves.forEach(m => dayOf(m.date)[m.after ? 'm2' : 'm0'].push(m));
+  for(const D of [...days.keys()].sort()){
+    const day = days.get(D), early = [], timed = [], afterM0 = [], afterM2 = [];
+    gone = {};
+    day.st.forEach(s => {
+      const outs = day.m0.concat(day.m2).filter(m => m.from === s.tank), ins = day.m0.concat(day.m2).some(m => m.to === s.tank);
+      if(outs.length && hasFish(s.tank)) (outs.some(m => !m.after) ? afterM0 : afterM2).push(s);   // restocked once its fish have moved out
+      else if(outs.length || ins || !s.setAt || !hasFish(s.tank)) early.push(s);                  // an empty tank: the new fish own the whole day
+      else timed.push(s);
+    });
+    early.forEach(s => doStock(s, fgPos(D, 0, 0)));
+    // "0 fish" typed that day for a tank that gets fish before the first feeding: the old fish on record there are gone
+    day.m0.forEach(m => { const T = m.to;
+      if(hasFish(T) && !today(T, D) && day.es.some(e => e.pond === T && e.fishTyped !== false && fgFirst(e) === 0)){
+        setOcc(T, null, fgPos(D, 0, 0), 'zeroed', null); } });
+    let seq = 1;
+    if(day.m0.length) seq = doSlot(day.m0, D, 0, seq);
+    afterM0.forEach((s, i) => doStock(s, fgPos(D, 0, 9e15 + i)));
+    // fish expected in tank n after this evening's moves (and a restock that evening), if it holds `pre` fish now
+    const after = (n, pre) => { let out = 0, inn = 0;
+      day.m2.forEach(m => {
+        if(m.from === n) out += fgNum(m.fish) > 0 && m.all !== true ? fgNum(m.fish) : pre;
+        if(m.to === n){ const g = cur(m.from); inn += fgNum(m.fish) > 0 ? fgNum(m.fish) : (g && g.count > 0 ? g.count : 0); }
+      });
+      afterM2.forEach(s => { if(s.tank === n) inn += s.fish || 0; });
+      return Math.max(0, pre - Math.min(pre, out)) + inn; };
+    const lg = (v, s) => s > 0 ? Math.abs(Math.log(v / s)) : null;
+    // a weighing typed for tank n on an "after last feeding" day: is it the fish there after the move?
+    const sizeAfter = (n, v, g0) => {
+      const dPre = g0 ? lg(v, g0.size) : null; let dPost = null;
+      day.m2.forEach(m => { if(m.to !== n) return; const g = cur(m.from), d = lg(v, fgNum(m.size) > 0 ? fgNum(m.size) : g && g.size); if(d !== null && (dPost === null || d < dPost)) dPost = d; });
+      if(dPre !== null && dPost !== null) return dPost < dPre;
+      if(dPre !== null && afterM2.some(s => s.tank === n)) return v < g0.size * 0.6;          // new fingerlings that evening
+      return dPre === null && dPost !== null;
+    };
+    // a weighing typed for tank n whose fish all left before the first feeding: the fish that left, or the fish there now?
+    const sizeOwner = (n, v) => {
+      const G = gone[n], X = cur(n);
+      if(!G || !X) return G || X;
+      const dG = lg(v, G.size), dX = lg(v, X.size);
+      if(dG !== null && dX !== null) return dG < dX ? G : X;
+      if(dG !== null) return v >= G.size * 0.6 ? G : X;                                    // the fish there now not weighed yet
+      return X;
+    };
+    // the day's entries, with a stocking saved that day at the time it was saved
+    const late = new Set(); day.m2.forEach(m => { late.add(m.from); late.add(m.to); });
+    const deferred = [];
+    day.es.map(e => ({e, seq:fgEntrySeq(e)})).concat(timed.map(s => ({s, seq:s.setAt}))).sort((a, b) => a.seq - b.seq).forEach(x => {
+      if(x.s){ doStock(x.s, fgPos(D, 1, x.seq)); return; }
+      const e = x.e, pos = fgPos(D, 1, x.seq);
+      if(late.has(e.pond)){
+        // fish move after the last feeding: are the typed count and weighing for the fish before or after the move?
+        const g0 = cur(e.pond), stored = fgNum(e.totalFish), mort = fgNum(e.mortality) || 0, sz = fgNum(e.avgSize) > 0 ? fgNum(e.avgSize) : null;
+        let side = e.moveSide === 'after' || e.moveSide === 'before' ? e.moveSide : null;              // staff said so on the entry
+        if(!side && e.fishTyped !== false && stored !== null){
+          const pre = g0 && g0.count !== null ? g0.count : 0, post = after(e.pond, pre);
+          side = Math.abs(stored - Math.max(0, post - mort)) < Math.abs(stored - Math.max(0, pre - mort)) ? 'after' : 'before';
+        }
+        if(!side && sz !== null) side = sizeAfter(e.pond, sz, g0) ? 'after' : 'before';
+        if(!g0){ deferred.push({e, opt: side === 'after' ? WHOLE : PRE}); return; }       // nothing there yet: it is for the fish moved in
+        if(side === 'after'){ doEntry(e, pos, REST); deferred.push({e, opt:POST}); } else doEntry(e, pos);
+        return;
+      }
+      if(gone[e.pond] && fgNum(e.avgSize) > 0 && sizeOwner(e.pond, fgNum(e.avgSize)) === gone[e.pond]){ doSize(gone[e.pond], e, pos); doEntry(e, pos, NOSIZE); return; }
+      doEntry(e, pos);
+    });
+    if(day.m2.length) seq = doSlot(day.m2, D, 2, seq);
+    afterM2.forEach((s, i) => doStock(s, fgPos(D, 2, 9e15 + i)));
+    deferred.forEach(x => doEntry(x.e, fgPos(D, 3, fgEntrySeq(x.e)), x.opt));
+  }
+
+  function occAt(n, pos){ let r = null; for(const o of (occ[n] || [])){ if(o.from <= pos) r = o; else break; } return r; }
+  const endOf = d => d + '|9';
+  const api = {
+    moves, info, groups, occ, orphans,
+    occAt, endOf,
+    /* the fish in tank n at the end of day d (null = empty or no data) */
+    group(n, d){ const o = occAt(n, endOf(d)); return o ? o.g : null; },
+    /* true when the tank's fish were moved out (or marked gone) and nothing has come in since */
+    emptied(n, d){ const o = occAt(n, endOf(d)); return !!(o && !o.g); },
+    /* everything that happened to the fish in tank n up to day d, wherever they were at the time */
+    hist(n, d){
+      const g = api.group(n, d); if(!g) return [];
+      const h = g.hist; let lo = 0, hi = h.length;
+      while(lo < hi){ const mid = (lo + hi) >> 1; if(h[mid].date <= d) lo = mid + 1; else hi = mid; }
+      return h.slice(0, lo);
+    },
+    /* fish in tank n just before position pos (an entry being saved), ignoring entry exceptId */
+    countBefore(n, pos, exceptId){
+      const o = occAt(n, pos); if(!o) return null; if(!o.g) return 0;
+      const h = o.g.hist;
+      for(let i = h.length - 1; i >= 0; i--){ const v = h[i]; if(v._pos >= pos || (exceptId !== undefined && v.id === exceptId)) continue; const c = fgNum(v.totalFish); if(c !== null) return c; }
+      return o.g.origin.fish;
+    },
+    /* true if the engine knows anything about this tank (stocking, entries or moves) */
+    tracked(n){ return (occ[n] || []).length > 0 || orphans.some(o => o.e.pond === n); },
+    lastSeen(n, d){ const g = api.group(n, d); return g ? lastSeen(g) : null; },
+    /* fish in the tank after a saved entry, worked out as above (null if the entry belongs to no group) */
+    countOf(id){ return counts.has(id) ? counts.get(id) : null; },
+    /* how the fish now in tank n (end of day d) got there: the move or stocking that put them there */
+    arrival(n, d){
+      const g = api.group(n, d); if(!g) return null;
+      let a = null; for(const p of g.path){ if(p.from <= d) a = p; }
+      return a;
+    },
+  };
+  return api;
+}
+
+/* ================= sync ================= */
+function setSync(state){
+  document.getElementById('syncStatus').className = 'sync ' + state;
+  document.getElementById('syncText').textContent = state === 'ok' ? t('synced') : state === 'error' ? t('syncFail') : state === 'saving' ? t('syncSaving') : t('syncOff');
+}
+const apiReady = () => API_URL && API_URL.indexOf('PASTE_YOUR') === -1;
+function applyData(data){
+  const parse = (v, d) => { try{ const x = v ? JSON.parse(v) : d; return x === null || x === undefined ? d : x; }catch(e){ return d; } };
+  stock = parse(data[STOCK_KEY], {}); if(typeof stock !== 'object' || Array.isArray(stock)) stock = {};
+  readings = parse(data[READINGS_KEY], {});
+  logEntries = parse(data[LOG_KEY], []); if(!Array.isArray(logEntries)) logEntries = [];
+  logChars = typeof data[LOG_KEY] === 'string' ? data[LOG_KEY].length : 0;
+  serverV2 = data.rev !== undefined && data.rev !== null;
+  TANKS.forEach(n => { if(!stock[n] || typeof stock[n] !== 'object') stock[n] = {supplier:'', totalFish:0, avgSizeG:0}; });
+  if(stock._moves !== undefined && !Array.isArray(stock._moves)) stock._moves = [];
+  fgRefresh();
+  loaded = true;
+}
+async function fetchData(){
+  const r = await fetch(API_URL, {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  const data = await r.json();
+  if(!data || typeof data !== 'object' || data.unchanged) throw new Error('bad reply');
+  return data;
+}
+/* a failed load keeps what is already on screen — it never replaces the log with an empty one */
+async function loadAll(){
+  if(!apiReady()){ setSync('off'); if(!loaded) applyData({}); return true; }
+  try{ applyData(await fetchData()); setSync('ok'); return true; }
+  catch(e){ setSync('error'); return false; }
+}
+async function apiSet(key, value){
+  const r = await fetch(API_URL, {method:'POST', body:JSON.stringify({key, value})});
+  let j = null; try{ j = await r.json(); }catch(e){}
+  if(!r.ok || (j && j.ok === false)) throw new Error((j && j.error) || ('HTTP ' + r.status));
+}
+/* every change: download the latest copy, apply this one change to it, then upload.
+   Changes are queued so two quick edits can't overwrite each other, and if the download
+   fails nothing is uploaded. */
+let commitChain = Promise.resolve();
+function commit(mutate){ const p = commitChain.then(() => doCommit(mutate)); commitChain = p.catch(() => {}); return p; }
+async function doCommit(mutate, tries){
+  tries = tries || 0;
+  if(!apiReady()){ setSync('off'); return {ok:false, err:'offline'}; }
+  setSync('saving');
+  let d0; try{ d0 = await fetchData(); applyData(d0); }catch(e){ setSync('error'); return {ok:false, err:'offline'}; }
+  // the tank rows hold moves and Tank setup (which must never be lost) and running counts for older pages
+  const core = st => JSON.stringify(st, (k, v) => k === 'totalFish' || k === 'avgSizeG' || k === 'fishFrom' ? undefined : v);
+  const was = [JSON.stringify(logEntries), core(stock), JSON.stringify(readings), JSON.stringify(stock)];
+  mutate();
+  const now = [JSON.stringify(logEntries), core(stock), JSON.stringify(readings), JSON.stringify(stock)];
+  try{
+    // the tank rows are uploaded only if nobody saved anything since this copy was downloaded, so a save on this phone
+    // can never undo a move or Tank setup change made a moment earlier on another phone (a real change starts again
+    // from the latest copy; running counts alone just wait for the next save)
+    if(now[3] !== was[3]){
+      let safe;
+      if(d0 && d0.rev !== undefined && d0.rev !== null){
+        try{ const r = await fetch(API_URL + '?rev=' + encodeURIComponent(d0.rev), {cache:'no-store'}); const j = await r.json(); safe = !!(j && (j.unchanged || (j.rev !== undefined && String(j.rev) === String(d0.rev)))); }catch(e){ safe = false; }
+      } else safe = now[1] !== was[1];                    // an older Apps Script without the change counter
+      if(safe) await apiSet(STOCK_KEY, now[3]);
+      else if(now[1] !== was[1]){ if(tries < 3) return doCommit(mutate, tries + 1); throw new Error('busy'); }
+    }
+    if(now[0] !== was[0]) await apiSet(LOG_KEY, now[0]);
+    if(now[2] !== was[2]) await apiSet(READINGS_KEY, now[2]);
+    logChars = now[0].length;
+    setSync('ok'); return {ok:true};
+  }catch(e){
+    setSync('error');
+    try{ applyData(await fetchData()); }catch(e2){}          // show what the cloud really holds
+    return {ok:false, err: /50000|maximum/i.test(String(e && e.message)) ? 'full' : 'save'};
+  }
+}
+function failText(res){ return res.err === 'full' ? t('failFull') : res.err === 'offline' ? t('failOffline') : t('failToast'); }
+/* an older copy of the farm log saves entries without the "count typed" mark: warn so every phone gets reloaded */
+function renderOldFlag(){
+  const f = document.getElementById('oldFlag');
+  const ids = logEntries.filter(e => e && e.fishTyped !== undefined).map(e => Number(e.id) || 0).concat(moveList().map(m => Number(m.id) || 0)).filter(x => x > 1e12);
+  const since = ids.length ? Math.min(...ids) : null;
+  const late = since ? logEntries.filter(e => e && e.fishTyped === undefined && !isNum(e.savedFish) && Number(e.id) > since).sort((a, b) => Number(b.id) - Number(a.id)) : [];
+  if(late.length){ f.textContent = t('oldPage', tankLabel(late[0].pond), fmtDate(late[0].date)); f.classList.add('show'); } else { f.textContent = ''; f.classList.remove('show'); }
+}
+function renderStoreFlag(){
+  const f = document.getElementById('storeFlag'), pct = Math.round(logChars / 50000 * 100);
+  if(!loaded && apiReady()){ f.className = 'flag crit show'; f.textContent = t('loadFail'); return; }
+  if(apiReady() && !serverV2 && pct >= 60){ f.className = 'flag ' + (pct >= 85 ? 'crit' : 'warn') + ' show'; f.textContent = t('storeFlag', pct); }
+  else { f.className = 'flag'; f.textContent = ''; }
+}
+
+/* ================= form building ================= */
+function buildWaterFields(){
+  document.getElementById('waterFields').innerHTML = WATER.map(p => `
+    <div class="f" id="wrap-${p.id}"><label for="${p.id}"><span>${esc(t(p.lbl))}</span><span class="chip" id="chip-${p.id}"></span></label>
+      <input type="number" id="${p.id}" step="any" min="0" inputmode="decimal" autocomplete="off" placeholder="${esc(t('eg', p.ph))}"><span class="hint">${esc(t('ideal', p.ideal))}</span></div>`).join('');
+  WATER.forEach(p => document.getElementById(p.id).addEventListener('input', () => { checkWater(p); updateMsg(); }));
+}
+function checkWater(p){
+  const el = document.getElementById(p.id), chip = document.getElementById('chip-'+p.id), wrap = document.getElementById('wrap-'+p.id);
+  wrap.classList.remove('warn','crit'); chip.textContent = ''; chip.className = 'chip';
+  if(!isNum(el.value)) return null;
+  const v = Number(el.value);
+  if(v < p.lim[0] || v > p.lim[1]){ wrap.classList.add('crit'); chip.className = 'chip c-crit'; chip.textContent = t('outOfRange'); return 'bad'; }
+  const s = STATUS[p.k](v);
+  chip.className = 'chip c-' + s; chip.textContent = s === 'good' ? t('stGood') : s === 'warn' ? t('stWarn') : t('stCrit');
+  if(s !== 'good') wrap.classList.add(s);
+  return s;
+}
+
+function formState(){
+  const n = selectedTank, fd = val('f-date') || todayLocal();
+  const cur = fishBefore(n, fd, editingId !== null ? editingId : (draftId || Date.now()), editingId !== null ? editingId : undefined);
+  const rawTyped = isNum(val('f-totalfish'));
+  const raw = rawTyped ? Math.max(0, Number(val('f-totalfish'))) : (cur !== null ? cur : 0);
+  const mort = Math.max(0, Number(val('f-mortality')) || 0);
+  const fish = Math.max(0, raw - mort);
+  const size = isNum(val('f-avgsize')) && Number(val('f-avgsize')) > 0 ? Number(val('f-avgsize')) : null;
+  const w = lastWeighing(n, editingId, fd);
+  const sizeForMath = size !== null ? size : (w ? Number(w.avgSize) : (isNum((stock[n] || {}).avgSizeG) && Number(stock[n].avgSizeG) > 0 ? Number(stock[n].avgSizeG) : null));
+  const biomass = sizeForMath !== null ? fish * sizeForMath / 1000 : null;
+  const sess = [1,2,3,4].map(i => val('f-feedkg'+i));
+  const anyFeed = sess.some(v => isNum(v));
+  const feed = sess.reduce((s,v) => s + (isNum(v) ? Number(v) : 0), 0);
+  return {n, cur, rawTyped, raw, mort, fish, size, sizeForMath, biomass, sess, anyFeed, feed, w};
+}
+
+function updatePreview(){
+  const s = formState(), n = s.n;
+  // fish
+  // typed a lot more fish than the log knows about: maybe they came from another tank
+  const mvHint = editingId === null && s.rawTyped && s.raw > Math.max(50, (s.cur || 0) * 1.25 + 50), fh = document.getElementById('fishHint');
+  // fish arriving this evening ("after last feeding" move into this tank on this date)
+  const fdate = val('f-date') || todayLocal(), F0 = fgGet(), ev = F0.moves.find(m => m.after && m.date === fdate && m.to === n && F0.info[m.id] && F0.info[m.id].k);
+  fh.textContent = mvHint ? t('hintMove') : ev ? t('fishHintEvening', fmtN(s.cur || 0), fmtN(Math.round(F0.info[ev.id].k)), tankLabel(ev.from))
+    : s.cur !== null && s.cur > 0 ? t('fishHintCur', fmtN(s.cur)) : t('fishHintNone');
+  fh.classList.toggle('move', mvHint);
+  document.getElementById('f-totalfish').placeholder = s.cur !== null ? fmtN(s.cur).replace(/,/g,'') : '';
+  const bm = s.biomass !== null ? t('biomass', fmtN(s.biomass, 1)) : '';
+  document.getElementById('fishResult').innerHTML = (s.mort > 0 ? t('fishResult', fmtN(s.raw), fmtN(s.mort), fmtN(s.fish)) : t('fishResultNoMort', fmtN(s.fish))) + bm;
+  renderMoveDay(s);
+  // size
+  const sh = document.getElementById('sizeHint');
+  if(s.size !== null && s.w){ const g = +(s.size - Number(s.w.avgSize)).toFixed(1); sh.textContent = t('sizeCmp', g, fmtDate(s.w.date)); sh.style.color = g > 0 ? 'var(--good)' : g < 0 ? '#FF8783' : ''; }
+  else { const w = weighDue(n, val('f-date') || todayLocal()); if(w && w.left <= 0){ sh.textContent = t('weighNow'); sh.style.color = 'var(--warn)'; } else { sh.textContent = t('sizeHint'); sh.style.color = ''; } }
+  // day of cycle
+  const d = val('f-date'), sd = d ? stockedOn(n, d) : null, dh = document.getElementById('dayHint');
+  if(sd && d){ const day = dayDiff(sd, d) + 1; dh.textContent = day > 0 ? t('dayAuto', day) : ''; if(!document.getElementById('f-day').dataset.touched && day > 0) document.getElementById('f-day').value = day; }
+  else dh.textContent = '';
+  // feed
+  const pct = suggestFeedPct(s.sizeForMath), pIn = document.getElementById('f-feedpct');
+  pIn.placeholder = pct !== null ? t('eg', pct) : '';
+  document.getElementById('pctHint').textContent = pct !== null ? t('pctHint', pct) : t('pctNone');
+  const usePct = Number(pIn.value) || pct || 0;
+  const sug = s.biomass && usePct ? s.biomass * usePct / 100 : null;
+  document.getElementById('splitBtn').disabled = !sug;
+  const already = logEntries.filter(e => e.pond === n && e.date === d && e.id !== editingId).reduce((a,e) => a + (Number(e.feedKg)||0), 0);
+  document.getElementById('feedAlready').textContent = already > 0 ? t('feedAlready', fmtF(already)) : '';
+  const total = s.feed + already, max = Math.max(total, sug || 0) * 1.1 || 1;
+  document.getElementById('compare').innerHTML = `
+    <div class="bar"><span style="width:${(total/max*100).toFixed(1)}%"></span>${sug ? `<i class="tick" style="left:calc(${(sug/max*100).toFixed(1)}% - 1px)"></i>` : ''}</div>
+    <div class="compare-txt"><span>${esc(t('cmpTotal', fmtF(s.feed), fmtN(s.feed*costPerKg(), 2)))}</span><span>${esc(sug ? t('cmpSug', fmtF(sug)) : t('cmpNoSug'))}</span></div>`;
+  updateMsg();
+}
+function updateMsg(){ document.getElementById('actionMsg').textContent = t('msgReady', tankLabel(selectedTank)); }
+/* fish move after the last feeding on this visit's date: are the typed count / weighing for the fish before or after the move? */
+function autoSide(n, d, s){
+  const F = fgGet(), id = editingId !== null ? editingId : (draftId || Date.now());
+  const o = F.occAt(n, fgPos(d, 1, fgEntrySeq({id}))), g0 = o && o.g, pre = g0 && g0.count !== null ? g0.count : 0;
+  const g1 = F.group(n, d), post = F.countBefore(n, F.endOf(d), editingId !== null ? editingId : undefined) || 0;
+  if(s.rawTyped) return Math.abs(s.raw - post) < Math.abs(s.raw - pre) ? 'after' : 'before';
+  if(s.size !== null){
+    const lg = x => x > 0 ? Math.abs(Math.log(s.size / x)) : null, dPre = g0 ? lg(g0.size) : null, dPost = g1 && g1 !== g0 ? lg(g1.size) : null;
+    if(dPre !== null && dPost !== null) return dPost < dPre ? 'after' : 'before';
+  }
+  return g0 ? 'before' : 'after';
+}
+function renderMoveDay(s){
+  const n = s.n, d = val('f-date') || todayLocal(), dm = fgGet().moves.filter(m => m.date === d && (m.from === n || m.to === n));
+  const box = document.getElementById('moveDay'), row = document.getElementById('mSideRow');
+  if(!dm.length){ box.hidden = true; row.hidden = true; return null; }
+  const list = ms => ms.map(m => `${tankLabel(m.from)} → ${tankLabel(m.to)}`).join(', '), b0 = dm.filter(m => !m.after), b2 = dm.filter(m => m.after);
+  document.getElementById('moveDayTxt').textContent = [b0.length ? t('mdBefore', list(b0), tankLabel(n)) : '', b2.length ? t('mdAfter', list(b2)) : ''].filter(Boolean).join(' ');
+  box.hidden = false;
+  const ask = b2.length > 0 && (s.rawTyped || s.size !== null);
+  row.hidden = !ask; if(!ask) return null;
+  const side = moveSideSel || autoSide(n, d, s);
+  document.getElementById('mSideBefore').textContent = t('mSideBefore'); document.getElementById('mSideAfter').textContent = t('mSideAfter');
+  document.querySelectorAll('#mSide button').forEach(b => b.classList.toggle('on', b.dataset.side === side));
+  return side;
+}
+
+/* ================= progress + picker + tank bar ================= */
+function renderProgress(){
+  const d = val('f-date') || todayLocal();
+  const done = TANKS.filter(n => logEntries.some(e => e.pond === n && e.date === d));
+  const left = TANKS.filter(n => !done.includes(n));
+  document.getElementById('progTitle').textContent = t('progTitle', done.length, d === todayLocal() ? t('progToday') : t('progOn', fmtDate(d)));
+  const dueW = TANKS.filter(n => { const w = weighDue(n, d); return w && w.left <= 0; });
+  document.getElementById('progSub').textContent = (left.length ? t('progLeft', left.map(tankLabel).join(', ')) : t('progDone')) + (dueW.length ? t('progWeigh', dueW.map(tankLabel).join(', ')) : '');
+  document.getElementById('progBar').style.width = (done.length / 13 * 100) + '%';
+  document.getElementById('progNum').textContent = `${done.length}/13`;
+  document.getElementById('picker').innerHTML = TANKS.map(n => {
+    const c = currentFish(n);
+    return `<button type="button" class="pick ${n === selectedTank ? 'sel' : ''} ${done.includes(n) ? 'logged' : ''}" data-tank="${n}">
+      <span class="done">✓</span>${dueW.includes(n) ? `<span class="wbadge">⚖ ${esc(t('weighBadge'))}</span>` : ''}
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" fill="#0A1826" stroke="${done.includes(n) ? '#2FBE86' : '#2A4B6B'}" stroke-width="6"/><circle cx="60" cy="60" r="47" fill="url(#w-live)"/><g style="color:rgba(230,248,255,.85)"><use href="#fish" x="30" y="44" width="58" height="29"/></g></svg>
+      <div class="nm">${esc(tankLabel(n))}</div><div class="sm mono">${c ? fmtN(c) : '—'}</div></button>`;
+  }).join('');
+}
+function renderTankBar(){
+  const n = selectedTank, today = todayLocal(), s = stock[n] || {}, c = currentFish(n), w = lastWeighing(n, undefined, today), es = entriesFor(n);
+  const last = es.length ? es[es.length-1].date : null;
+  const sd = stockedOn(n, today), day = sd ? dayDiff(sd, today) + 1 : null;
+  const F = fgGet(), g = F.group(n, today), a = F.arrival(n, today), o = F.occAt(n, F.endOf(today));
+  let moved = '';
+  if(g && a && (a.how === 'move' || a.how === 'merge')) moved = t(a.how === 'merge' ? 'barMerged' : 'barFrom', tankLabel(a.fromTank), fmtDate(a.from));
+  else if(g && a && a.how === 'split') moved = t('barSplit', tankLabel(a.toTank), fmtN(a.k), fmtDate(a.from));
+  else if(!g && o && o.cause === 'out' && o.m) moved = t('barEmpty', tankLabel(o.m.to), fmtDate(o.m.date));
+  const supplier = g ? (g.origin.supplier || s.supplier) : (F.emptied(n, today) ? '' : s.supplier);
+  document.getElementById('tankBar').innerHTML = `<strong>${esc(tankLabel(n))}</strong>
+    <span><span class="mono">${c !== null ? fmtN(c) : '—'}</span> ${esc(t('fishWord'))} ${esc(lang === 'en' ? t('inTank') : '')}</span>
+    <span>${esc(t('lastSize'))}: <span class="mono">${w ? fmtN(Number(w.avgSize), 1) + ' g' : '—'}</span>${w ? ' (' + esc(fmtDate(w.date)) + ')' : ''}</span>
+    <span>${esc(t('lastVisit'))}: <span class="mono">${last ? esc(fmtDate(last)) : esc(t('never'))}</span></span>
+    ${supplier ? `<span>${esc(supplier)}</span>` : ''}
+    ${day && day > 0 ? `<span>${esc(t('dayWord'))} <span class="mono">${day}</span></span>` : ''}
+    ${moved ? `<span class="moved">↪ ${esc(moved)}</span>` : ''}
+    ${(() => { const w = weighDue(n, val('f-date') || todayLocal()); if(!w) return '';
+      const txt = w.left < 0 ? t('wLate', -w.left) : w.left === 0 ? t('wDueToday') : t('wIn', fmtDate(w.due), w.left);
+      return `<span class="${w.left <= 0 ? 'wdue' : ''}">⚖ ${esc(t('nextWeigh'))}: <span class="mono">${esc(txt)}</span></span>`; })()}`;
+}
+
+/* ================= setup table ================= */
+/* 'own' = the row's stocking is the fish in the tank now (edit it freely); 'moved' = those fish have moved to another
+   tank since, so any change here starts a new stocking and theirs is kept for them; '' = no stocking in the row */
+function rowState(n){
+  const s = stock[n] || {}, today = todayLocal(); if(!fgIsDate(s.stockDate)) return '';
+  if(s.stockDate > today) return 'own';
+  const g = fgGet().group(n, today);
+  if(g && g.origin.tank === n && g.origin.date === s.stockDate) return 'own';
+  return moveList().some(m => (m.from === n || m.to === n) && m.date >= s.stockDate) ? 'moved' : 'own';
+}
+function lastMoveDate(n, before){ let d = ''; moveList().forEach(m => { if((m.from === n || m.to === n) && m.date > d && (!before || m.date < before)) d = m.date; }); return d; }
+function setupFlag(text){ const f = document.getElementById('setupFlag'); f.className = 'flag' + (text ? ' crit show' : ''); f.textContent = text || ''; }
+function renderSetup(){
+  const F = fgGet(), today = todayLocal();
+  document.getElementById('setupBody').innerHTML = TANKS.map(n => { const s = stock[n] || {};
+    const g = F.group(n, today), a = F.arrival(n, today), o = F.occAt(n, F.endOf(today));
+    let note = '';
+    if(g && a && (a.how === 'move' || a.how === 'merge')) note = t('setupMoved', tankLabel(a.fromTank), fmtDate(a.from), g.origin.date ? fmtDate(g.origin.date) : '');
+    else if(!g && o && o.cause === 'out' && o.m) note = t('setupEmpty', tankLabel(o.m.to), fmtDate(o.m.date));
+    const r = rowState(n) === 'moved' ? {} : s;                  // that stocking went with the fish: the row is ready for the next one
+    // fish that were stocked in another tank: their stocking can be corrected here
+    const fixable = !!(g && g.origin.date && g.origin.tank !== n);
+    const fixRow = fixable && fixTank === n ? `<tr class="subrow"><td></td><td colspan="3"><div class="fixbox"><span class="lbl">${esc(t('fixTitle', tankLabel(g.origin.tank)))}</span>
+      <input type="date" id="fixDate" autocomplete="off" value="${esc(g.origin.date)}"><input type="number" id="fixFish" min="0" autocomplete="off" value="${g.origin.fish !== null ? Math.round(g.origin.fish) : ''}" placeholder="8500">
+      <input type="text" id="fixSup" autocomplete="off" value="${esc(g.origin.supplier || '')}" placeholder="${esc(t('supplierPh'))}">
+      <button class="btn small" type="button" data-fix-save="${n}">${esc(t('fixSave'))}</button><button class="btn ghost small" type="button" data-fix-cancel="1">${esc(t('fixCancel'))}</button></div></td></tr>` : '';
+    return `<tr>
+    <td class="nm">${esc(tankLabel(n))}</td>
+    <td><input autocomplete="off" type="text" data-tank="${n}" data-field="supplier" value="${esc(r.supplier || '')}" placeholder="${esc(t('supplierPh'))}"></td>
+    <td><input autocomplete="off" type="date" data-tank="${n}" data-field="stockDate" value="${esc(r.stockDate || '')}"></td>
+    <td><input autocomplete="off" type="number" min="0" data-tank="${n}" data-field="initialFish" value="${isNum(r.initialFish) ? Number(r.initialFish) : ''}" placeholder="8500"></td></tr>`
+    + (note ? `<tr class="subrow"><td></td><td colspan="3" class="sub">↪ ${esc(note)}${fixable && fixTank !== n ? ` <button class="rowbtn" type="button" data-fix="${n}">${esc(t('fixBtn'))}</button>` : ''}</td></tr>` : '')
+    + fixRow; }).join('');
+}
+/* the row as it was when staff started editing it (so a restock archives the real earlier stocking) */
+function snapRow(tank){ if(!rowSnap || rowSnap.tank !== tank) rowSnap = {tank, row:JSON.parse(JSON.stringify(stock[tank] || {}))}; }
+function onSetupFocus(e){ const el = e.target; if(el.dataset && el.dataset.tank) snapRow(el.dataset.tank); }
+function onSetupBlur(e){
+  const el = e.target; if(!el.dataset || !el.dataset.tank) return;
+  const to = e.relatedTarget, tank = el.dataset.tank;
+  if(setupTimers[tank]){ clearTimeout(setupTimers[tank].t); const job = setupTimers[tank]; delete setupTimers[tank]; job.run(); }   // finish a date being typed
+  if(!(to && to.dataset && to.dataset.tank === tank)) setTimeout(() => { if(rowSnap && rowSnap.tank === tank && !setupTimers[tank]) rowSnap = null; }, 0);
+}
+function onSetupChange(e){
+  const el = e.target; if(!el.dataset || !el.dataset.tank) return;
+  const tank = el.dataset.tank, field = el.dataset.field, value = el.value;
+  snapRow(tank); const snap = rowSnap.row;
+  if(field === 'stockDate'){
+    // a date box reports every keystroke (year 2, 20, 202…): wait until the date is complete and has settled
+    if(value && !fgIsDate(value)) return;
+    if(setupTimers[tank]) clearTimeout(setupTimers[tank].t);
+    const job = {run:() => saveSetup(tank, field, value, snap)};
+    job.t = setTimeout(() => { delete setupTimers[tank]; job.run(); }, 900);
+    setupTimers[tank] = job;
+    return;
+  }
+  saveSetup(tank, field, value, snap);
+}
+async function saveSetup(tank, field, value, snap){
+  const state = rowState(tank), s0 = stock[tank] || {};
+  // the last move that could be rewritten: any move for a new stocking; a move before the stocking for the row's own fish
+  const lm = state === 'own' ? lastMoveDate(tank, s0.stockDate) : lastMoveDate(tank);
+  const past0 = (Array.isArray(s0.past) ? s0.past : []).filter(x => x && fgIsDate(x.stockDate)).concat(state === 'moved' ? [s0] : []);
+  const latest = past0.reduce((a, x) => x.stockDate > a ? x.stockDate : a, '');
+  // dates that would rewrite where fish already were are refused (the row is shown again as it was)
+  let refuse = null;
+  if(field === 'stockDate' && value && !past0.some(x => x.stockDate === value)){
+    if(lm && value < lm) refuse = t('setupBeforeMove', tankLabel(tank), fmtDate(lm));
+    else if(latest && value < latest) refuse = t('setupBeforePast', tankLabel(tank), fmtDate(latest));
+  }
+  if(refuse){ setupFlag(refuse); rowSnap = null; const ae = document.activeElement; if(ae && ae.blur) ae.blur(); renderSetup(); return; }
+  const res = await commit(() => {
+    const s = stock[tank] || (stock[tank] = {supplier:'', totalFish:0, avgSizeG:0});
+    let past = (Array.isArray(s.past) ? s.past : []).filter(x => x && fgIsDate(x.stockDate));
+    const keep = x => { past = past.filter(p => p.stockDate !== x.stockDate).concat([{stockDate:x.stockDate, initialFish:x.initialFish, supplier:x.supplier || '', stockSetAt:x.stockSetAt || ''}])
+      .sort((a, b) => a.stockDate.localeCompare(b.stockDate)); };
+    let before = snap;
+    if(state === 'moved' && fgIsDate(s.stockDate)){
+      // those fish live in another tank now: their stocking is kept for them and this row starts a new one
+      keep(s); s.stockDate = ''; s.initialFish = ''; s.supplier = ''; s.stockSetAt = ''; before = null;
+    }
+    if(field === 'stockDate'){
+      const old = before && fgIsDate(before.stockDate) ? before : (fgIsDate(s.stockDate) ? s : null);   // the stocking that was there before this edit
+      // restocked (or the date cleared): keep the earlier stocking, its fish may have been moved to another tank.
+      // A date typed in the last 12 hours that is changed again is a correction, not a restock.
+      // A date moved on by more than a week is a restock; a smaller change is a correction.
+      const fresh = old && Number(old.stockSetAt) > 1e12 && Date.now() - Number(old.stockSetAt) < 12 * 3600e3;
+      if(old && !fresh && (!value || fgDays(old.stockDate, value) > 7)){
+        // number or supplier changed in the last 12 hours, before this new date: those were for the new fish
+        const pv = s._prev && Date.now() - s._prev.at < 12 * 3600e3 ? s._prev : null;
+        keep(Object.assign({}, old, pv ? {initialFish:pv.initialFish, supplier:pv.supplier} : {}));
+      }
+      delete s._prev;
+      const back = value ? past.find(x => x.stockDate === value) : null;        // the date of an earlier stocking: that stocking again
+      if(value) past = past.filter(x => x.stockDate < value);
+      s.past = past.slice(-12);
+      s.stockDate = value; s.stockSetAt = Date.now();
+      if(back){ s.initialFish = back.initialFish; s.supplier = back.supplier || ''; if(back.stockSetAt) s.stockSetAt = back.stockSetAt; }
+    } else {
+      s.past = past.slice(-12);
+      // the row's values before this round of edits, in case a new stocking date follows (a restock)
+      if(fgIsDate(s.stockDate) && !(s._prev && Date.now() - s._prev.at < 12 * 3600e3)) s._prev = {at:Date.now(), initialFish:s.initialFish, supplier:s.supplier || ''};
+      if(field === 'initialFish') s.initialFish = isNum(value) ? Number(value) : ''; else s[field] = value;
+    }
+    recomputeAll();
+  });
+  if(state === 'moved') rowSnap = null;
+  if(res.ok) setupFlag('');
+  toast(res.ok ? t('setupSaved') : failText(res), !res.ok);
+  renderProgress(); renderTankBar(); updatePreview(); renderStoreFlag(); renderMoveSelects(); movePreview(); renderMoves();
+  const ae = document.activeElement; if(!(ae && ae.closest && ae.closest('#setupBody'))) renderSetup();
+}
+
+/* correcting the stocking of fish that were stocked in another tank (it lives in that tank's Tank setup row or its earlier stockings) */
+async function saveFix(n){
+  const F = fgGet(), g = F.group(n, todayLocal()); if(!g || !g.origin.date) return;
+  const o = g.origin, date = val('fixDate'), fish = val('fixFish'), sup = val('fixSup').trim();
+  const home = stock[o.tank] || {}, others = [home.stockDate].concat((home.past || []).map(x => x && x.stockDate)).filter(x => fgIsDate(x) && x !== o.date);
+  const left = (g.path.find(p => p.how !== 'stock' && p.how !== 'data') || {}).from || todayLocal();
+  const prior = others.filter(x => x < o.date).sort().pop(), later = others.filter(x => x > o.date).sort()[0];
+  let refuse = null;
+  if(!fgIsDate(date)) refuse = t('needDate');
+  else if(date > left) refuse = t('fixAfterMove', fmtDate(left));
+  else if((prior && date <= prior) || (later && date >= later)) refuse = t('setupBeforePast', tankLabel(o.tank), fmtDate(prior && date <= prior ? prior : later));
+  if(refuse){ setupFlag(refuse); return; }
+  const res = await commit(() => {
+    const h = stock[o.tank] || (stock[o.tank] = {supplier:'', totalFish:0, avgSizeG:0});
+    const fixIt = x => { x.stockDate = date; if(isNum(fish)) x.initialFish = Number(fish); x.supplier = sup; };
+    const p = (Array.isArray(h.past) ? h.past : []).find(x => x && x.stockDate === o.date);
+    if(h.stockDate === o.date) fixIt(h); else if(p) fixIt(p);
+    else h.past = (Array.isArray(h.past) ? h.past : []).concat([{stockDate:date, initialFish: isNum(fish) ? Number(fish) : o.fish, supplier:sup}]).sort((a, b) => a.stockDate.localeCompare(b.stockDate));
+    (stock._moves || []).forEach(m => { if(m && m.src && m.src.tank === o.tank && m.src.date === o.date) m.src = {tank:o.tank, date, fish: isNum(fish) ? Number(fish) : m.src.fish, supplier:sup}; });
+    recomputeAll();
+  });
+  if(res.ok){ fixTank = null; setupFlag(''); }
+  toast(res.ok ? t('fixDone') : failText(res), !res.ok);
+  renderEverything();
+}
+
+/* ================= history ================= */
+function renderFilters(){
+  const ft = document.getElementById('filterTank'), fd = document.getElementById('filterDate');
+  const pt = ft.value || 'all', pd = fd.value || 'all';
+  ft.innerHTML = `<option value="all">${esc(t('allTanks'))}</option>` + TANKS.map(n => `<option value="${n}">${esc(tankLabel(n))}</option>`).join('');
+  const dates = [...new Set(logEntries.map(e => e.date).filter(Boolean))].sort((a,b) => b.localeCompare(a));
+  fd.innerHTML = `<option value="all">${esc(t('allDates'))}</option>` + dates.map(d => `<option value="${d}">${esc(fmtDate(d))}</option>`).join('');
+  ft.value = pt; fd.value = dates.includes(pd) ? pd : 'all';
+}
+function renderHistory(){
+  const cols = ['hDate','hTank','hDay','hTemp','hPh','hDo','hNh3','hNo2','hNo3','hFish','hSize','hMort','hFeed','hTotal',''];
+  document.getElementById('logHead').innerHTML = cols.map(c => `<th>${c ? esc(t(c)) : ''}</th>`).join('');
+  const ft = document.getElementById('filterTank').value || 'all', fd = document.getElementById('filterDate').value || 'all';
+  const rows = logEntries.filter(e => (ft === 'all' || e.pond === ft) && (fd === 'all' || e.date === fd))
+    .sort((a,b) => (b.date||'').localeCompare(a.date||'') || b.id - a.id);
+  document.getElementById('entryCount').textContent = t('entries', rows.length);
+  const body = document.getElementById('logBody');
+  if(!rows.length){ body.innerHTML = `<tr><td colspan="15" class="empty">${esc(t('noEntries'))}</td></tr>`; return; }
+  const f = v => isNum(v) ? v : '—';
+  const wc = (k, v) => { if(!isNum(v)) return `<td>—</td>`; const s = STATUS[k](Number(v)); return `<td class="${s === 'good' ? '' : 'v-'+s}">${v}</td>`; };
+  const shown = rows.slice(0, histLimit), F = fgGet();
+  const fishOf = e => { const c = F.countOf(e.id); return c !== null ? c : isNum(e.totalFish) ? Number(e.totalFish) : null; };
+  body.innerHTML = shown.map(e => {
+    const split = [1,2,3,4].map(i => isNum(e['feedKg'+i]) ? e['feedKg'+i] : '–').join(' / ');
+    return `<tr class="${e.id === editingId ? 'editing' : ''}">
+      <td>${esc(e.date || '—')}</td><td class="nm">${esc(tankLabel(e.pond))}</td><td>${f(e.day)}</td>
+      ${wc('temp', e.temp)}${wc('ph', e.ph)}${wc('dox', e.dox)}${wc('ammonia', e.ammonia)}${wc('no2', e.no2)}${wc('no3', e.no3)}
+      <td>${(v => v !== null ? fmtN(v) : '—')(fishOf(e))}</td><td>${f(e.avgSize)}</td>
+      <td class="${Number(e.mortality) > 0 ? 'v-crit' : ''}">${f(e.mortality)}</td>
+      <td>${split}</td><td>${f(e.feedKg)}</td>
+      <td><button class="rowbtn" data-act="edit" data-id="${e.id}" type="button">${esc(t('edit'))}</button><button class="rowbtn del" data-act="del" data-id="${e.id}" type="button">${esc(t('del'))}</button></td></tr>`;
+  }).join('') + (rows.length > histLimit ? `<tr><td colspan="15"><button class="btn ghost small more" id="moreBtn" type="button">${esc(t('showMore', Math.min(60, rows.length - histLimit)))}</button></td></tr>` : '');
+}
+
+/* ================= edit / cancel / reset ================= */
+function resetForm(){
+  draftId = null; editFish = null; moveSideSel = null;
+  ['f-temp','f-ph','f-do','f-ammonia','f-no2','f-no3','f-totalfish','f-mortality','f-avgsize','f-feedkg1','f-feedkg2','f-feedkg3','f-feedkg4','f-day','f-feedpct'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-feedpct').dataset.touched = '';
+  document.getElementById('f-day').dataset.touched = '';
+  WATER.forEach(checkWater);
+}
+function startEdit(id){
+  const e = logEntries.find(x => x.id === id); if(!e) return;
+  if(editingId === null) editPrevDate = val('f-date');       // go back to this date when the edit is done
+  editingId = id; selectedTank = e.pond;
+  resetForm();
+  document.getElementById('f-date').value = e.date || todayLocal();
+  WATER.forEach(p => { document.getElementById(p.id).value = isNum(e[p.k]) ? e[p.k] : ''; checkWater(p); });
+  // stored count is AFTER mortality — add it back so saving again does not subtract twice.
+  // A count that was only carried on (or was out of date because fish moved) is left blank, so it follows the latest count.
+  const ec = fgGet().countOf(e.id), stored = isNum(e.totalFish) ? Number(e.totalFish) : null;
+  const shown = e.fishTyped === true || (e.fishTyped !== false && stored !== null && (ec === null || Math.abs(ec - stored) < 0.5));
+  const pre = shown && stored !== null ? String(stored + (Number(e.mortality)||0)) : '';
+  document.getElementById('f-totalfish').value = pre;
+  editFish = {pre, typed:e.fishTyped};
+  moveSideSel = e.moveSide === 'before' || e.moveSide === 'after' ? e.moveSide : null;
+  document.getElementById('f-mortality').value = Number(e.mortality) ? e.mortality : '';
+  document.getElementById('f-avgsize').value = isNum(e.avgSize) ? e.avgSize : '';
+  [1,2,3,4].forEach(i => document.getElementById('f-feedkg'+i).value = isNum(e['feedKg'+i]) ? e['feedKg'+i] : '');
+  if(![1,2,3,4].some(i => isNum(e['feedKg'+i])) && isNum(e.feedKg) && Number(e.feedKg) > 0) document.getElementById('f-feedkg1').value = e.feedKg;
+  document.getElementById('f-feedpct').value = isNum(e.feedPct) ? e.feedPct : ''; document.getElementById('f-feedpct').dataset.touched = 'true';
+  document.getElementById('f-day').value = isNum(e.day) ? e.day : ''; document.getElementById('f-day').dataset.touched = 'true';
+  const fl = document.getElementById('editFlag'); fl.textContent = t('editing', tankLabel(e.pond), fmtDate(e.date)); fl.classList.add('show');
+  document.getElementById('cancelBtn').style.display = '';
+  document.getElementById('saveBtn').textContent = t('saveEdit');
+  renderProgress(); renderTankBar(); updatePreview(); renderHistory();
+  document.getElementById('picker').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function cancelEdit(){
+  editingId = null;
+  if(editPrevDate){ document.getElementById('f-date').value = editPrevDate; editPrevDate = null; draftId = null; }
+  document.getElementById('editFlag').classList.remove('show');
+  document.getElementById('cancelBtn').style.display = 'none';
+  document.getElementById('saveBtn').textContent = t('save');
+  resetForm(); updatePreview(); renderHistory();
+}
+
+/* ================= save ================= */
+function showFlag(level, text){ const f = document.getElementById('submitFlag'); f.className = 'flag ' + (level ? level + ' show' : ''); f.textContent = text || ''; }
+async function save(){
+  if(saving) return;                      // prevents double entries from a double-tap
+  const d = val('f-date');
+  if(!d){ showFlag('warn', t('needDate')); return; }
+  for(const p of WATER){ if(checkWater(p) === 'bad'){ showFlag('crit', t('badValue', t(p.lbl))); document.getElementById(p.id).focus(); return; } }
+  const s = formState();
+  const anyWater = WATER.some(p => isNum(val(p.id)));
+  if(!anyWater && !s.rawTyped && !s.mort && s.size === null && !s.anyFeed && editingId === null){ showFlag('warn', t('needSomething')); return; }
+
+  const isEdit = editingId !== null;
+  if(!isEdit && draftId === null) draftId = Date.now();   // kept if a save fails, so a retry can't create a duplicate
+  // was the fish count counted by staff? (an unchanged count while editing keeps what it was)
+  let typedFlag = s.rawTyped, useTyped = s.rawTyped;
+  if(isEdit && editFish && val('f-totalfish') === editFish.pre){
+    if(editFish.pre === ''){ typedFlag = false; useTyped = false; } else { typedFlag = editFish.typed; useTyped = true; }
+  }
+  const wv = {}; WATER.forEach(p => wv[p.k] = isNum(val(p.id)) ? +Number(val(p.id)).toFixed(p.dec === 2 ? 2 : 1) : '');
+  const entry = Object.assign({
+    id: isEdit ? editingId : draftId, date:d, pond:s.n, day: isNum(val('f-day')) ? val('f-day') : '',
+  }, wv, {
+    totalFish: s.fish,
+    avgSize: s.size !== null ? s.size : '',                       // only a real weighing is stored
+    mortality: s.mort,
+    feedPct: isNum(val('f-feedpct')) ? Number(val('f-feedpct')) : '',
+    feedKg: s.anyFeed ? r3(s.feed) : '',                   // no feeding typed = no feed recorded
+    feedKg1: isNum(s.sess[0]) ? r3(s.sess[0]) : '', feedKg2: isNum(s.sess[1]) ? r3(s.sess[1]) : '',
+    feedKg3: isNum(s.sess[2]) ? r3(s.sess[2]) : '', feedKg4: isNum(s.sess[3]) ? r3(s.sess[3]) : '',
+  });
+  if(typedFlag !== undefined) entry.fishTyped = !!typedFlag;
+  const side = renderMoveDay(s); if(side) entry.moveSide = side;                 // kept with the entry so it never flips later
+
+  saving = true; const btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = t('saving');
+  const res = await commit(() => {
+    if(!useTyped) entry.totalFish = Math.max(0, fishBefore(entry.pond, entry.date, entry.id, entry.id) - entry.mortality);   // latest count from the cloud copy
+    const i = logEntries.findIndex(x => x.id === entry.id);
+    if(i !== -1){ const o = logEntries[i];                       // older entry: keep the count it was first saved with
+      if(isNum(o.savedFish)) entry.savedFish = Number(o.savedFish); else if(o.fishTyped === undefined && isNum(o.totalFish)) entry.savedFish = Number(o.totalFish); }
+    if(i !== -1) logEntries[i] = entry; else logEntries.push(entry);
+    recomputeAll();
+  });
+  saving = false; btn.disabled = false;
+  if(!res.ok){ btn.textContent = isEdit ? t('saveEdit') : t('save'); showFlag('crit', failText(res)); toast(failText(res), true);
+    renderProgress(); renderTankBar(); renderFilters(); renderHistory(); renderStoreFlag(); return; }
+  draftId = null; btn.textContent = t('save');
+
+  const crit = [], warn = [];
+  WATER.forEach(p => { if(isNum(entry[p.k])){ const st = STATUS[p.k](Number(entry[p.k])); if(st === 'crit') crit.push(t(p.lbl)); else if(st === 'warn') warn.push(t(p.lbl)); } });
+  if(crit.length){ showFlag('crit', `${tankLabel(s.n)} — ${t('flagCrit', crit.join(', '))}`); beep(3); }
+  else if(warn.length){ showFlag('warn', `${tankLabel(s.n)} — ${t('flagWarn', warn.join(', '))}`); beep(1); }
+  else showFlag('', '');
+  toast(isEdit ? t('updatedToast', tankLabel(s.n)) : t('savedToast', tankLabel(s.n)));
+  if(isEdit) cancelEdit(); else resetForm();
+  // jump to the next tank that still needs logging for this date
+  if(!isEdit){ const next = TANKS.find(n => !logEntries.some(e => e.pond === n && e.date === d)); if(next) selectedTank = next; }
+  renderEverything();
+}
+async function del(id){
+  const e = logEntries.find(x => x.id === id); if(!e) return;
+  if(!confirm(t('confirmDel', tankLabel(e.pond), fmtDate(e.date)))) return;
+  if(editingId === id) cancelEdit();
+  const res = await commit(() => { logEntries = logEntries.filter(x => x.id !== id); recomputeAll(); });
+  toast(res.ok ? t('deletedToast') : failText(res), !res.ok);
+  renderEverything();
+}
+
+/* ================= move fish ================= */
+function moveDraft(flags){
+  const fish = val('m-fish'), size = val('m-size'), d = {id: moveEditId !== null ? moveEditId : (moveDraftId || Date.now()), date:val('m-date'), from:val('m-from'), to:val('m-to'),
+    fish: isNum(fish) && Number(fish) > 0 ? Math.round(Number(fish)) : '', size: isNum(size) && Number(size) > 0 ? r3(size) : '',
+    after: moveWhen === 'after', note:val('m-note').trim()};
+  if(moveEditId !== null){ const o = moveList().find(x => x.id === moveEditId); if(o && o.src && o.from === d.from) d.src = o.src; }   // kept while editing
+  if(flags){
+    const shown = id => !document.getElementById(id).hidden;
+    if(d.fish !== '') d.all = shown('mAllRow') ? document.getElementById('m-all').checked : true;
+    if(shown('mDestRow') && moveDest === 'clear') d.clearTo = true;
+    if(shown('mDestRow') && moveDest === 'keep') d.keepTo = true;
+  }
+  return d;
+}
+const moveList = () => Array.isArray(stock._moves) ? stock._moves.filter(m => m && m.date) : [];
+/* the farm worked out with this move added or changed (nothing is saved) */
+function moveSim(d){ return fgBuild(logEntries, Object.assign({}, stock, {_moves:moveList().filter(x => x.id !== d.id).concat([d])}), TANKS); }
+function renderMoveSelects(){
+  const d = val('m-date') || todayLocal(), B = moveEditId === null ? fgGet() : fgBuild(logEntries, Object.assign({}, stock, {_moves:moveList().filter(x => x.id !== moveEditId)}), TANKS);
+  const pos = fgPos(d, moveWhen === 'after' ? 2 : 0, 0);
+  const lbl = n => { const c = B.countBefore(n, pos); return `${tankLabel(n)} · ${c > 0 ? fmtN(Math.round(c)) + ' ' + t('fishWord') : t('mEmpty')}`; };
+  ['m-from', 'm-to'].forEach(id => { const el = document.getElementById(id), v = el.value;
+    el.innerHTML = `<option value="">${esc(t('mChoose'))}</option>` + TANKS.map(n => `<option value="${n}">${esc(lbl(n))}</option>`).join(''); el.value = v; });
+}
+function movePreview(){
+  const d = moveDraft(), pv = document.getElementById('mPreview'), fh = document.getElementById('mFishHint');
+  document.getElementById('mWhenHint').textContent = t(moveWhen === 'after' ? 'mAfterHint' : 'mBeforeHint');
+  document.querySelectorAll('#m-when button').forEach(b => b.classList.toggle('on', b.dataset.when === moveWhen));
+  fh.textContent = '';
+  const rows = ['mAllRow', 'mDestRow'].map(id => document.getElementById(id));
+  const hideRows = () => rows.forEach(r => { r.hidden = true; });
+  if(!d.date || !d.from || !d.to){ hideRows(); pv.className = 'result'; pv.textContent = t('mPvStart'); return null; }
+  if(d.from === d.to){ hideRows(); pv.className = 'result warn'; pv.textContent = t('pvSame'); return null; }
+  const A = tankLabel(d.from), Bt = tankLabel(d.to);
+  // first without the tick boxes: how many fish are there, and what is in the other tank?
+  const i0 = moveSim(d).info[d.id];
+  if(!i0 || i0.warn === 'noFish'){ hideRows(); pv.className = 'result warn'; pv.textContent = t('pvNoFish', A, fmtDate(d.date)); fh.textContent = t('mFishNone'); return null; }
+  if(i0.before > 0) fh.textContent = t('mFishAll', fmtN(Math.round(i0.before)));
+  const allRow = rows[0], destRow = rows[1];
+  allRow.hidden = !(d.fish !== '' && i0.before > 0 && d.fish < i0.before);
+  if(!allRow.hidden){
+    document.getElementById('mAllLbl').textContent = t('mAllLbl', A, fmtN(Math.round(i0.before)));
+    if(!mAllTouched) document.getElementById('m-all').checked = d.fish >= i0.before * 0.95;
+  }
+  // fish already in the other tank that were not put there that day: staff say whether they are still there
+  const ask = !!(i0.destHas && !i0.destToday), seen = i0.destSeen ? fmtDate(i0.destSeen) : '—';
+  destRow.hidden = !ask;
+  if(ask){
+    document.getElementById('mDestQ').textContent = i0.destFish > 0 ? t('mDestQ', Bt, fmtN(Math.round(i0.destFish)), seen) : t('mDestQNoCount', Bt, seen);
+    document.getElementById('mDestKeep').textContent = t('mDestKeep');
+    document.getElementById('mDestMoved').textContent = t('mDestMoved');
+    document.getElementById('mDestClear').textContent = t('mDestClear', Bt);
+    document.querySelectorAll('#m-dest button').forEach(b => b.classList.toggle('on', b.dataset.dest === moveDest));
+  }
+  // then with the answers
+  const dd = moveDraft(true), F = moveSim(dd), inf = F.info[dd.id];
+  if(inf.warn === 'noCount' && dd.fish === ''){ pv.className = 'result warn'; pv.textContent = t('pvNoCount', A); return null; }
+  const g = F.group(d.to, d.date);
+  let html = inf.all ? t('pvAll', fmtN(Math.round(inf.k)), esc(A), esc(Bt), g && g.origin.date && !inf.merge ? fmtDate(g.origin.date) : '')
+    : t('pvPart', fmtN(inf.k), fmtN(Math.round(inf.before)), Math.round(inf.k / inf.before * 100), esc(A), esc(Bt), fmtN(Math.round(inf.before - inf.k)));
+  const sp = lang === 'zh' ? '' : ' ';
+  if(inf.warn === 'recount') html += sp + t('pvRecount', fmtN(Math.round(inf.k)), fmtN(Math.round(inf.before)));
+  if(ask && !moveDest){ pv.className = 'result warn'; pv.innerHTML = html + sp + esc(t('pvAsk', Bt)); return inf; }
+  if(ask && moveDest === 'moved'){ pv.className = 'result warn'; pv.innerHTML = html + sp + esc(t('pvMoved', Bt)); return inf; }
+  if(inf.clearedWhy === 'staff') html += sp + esc(t('pvCleared', Bt, fmtN(Math.round(inf.cleared))));
+  if(inf.merge){
+    const h = Math.round(inf.into || 0), tot = fmtN(h + Math.round(inf.k || 0));
+    html += sp + (inf.into === null ? esc(t('pvMergeUnknown', Bt, tot)) : t(inf.small ? 'pvMergeSmall' : inf.destToday ? 'pvMergeToday' : 'pvMerge', esc(Bt), fmtN(h), tot));
+  }
+  pv.className = 'result'; pv.innerHTML = html;
+  return inf;
+}
+function moveFlag(level, text){ const f = document.getElementById('moveFlag'); f.className = 'flag ' + (level ? level + ' show' : ''); f.textContent = text || ''; }
+function renderMoves(){
+  const F = fgGet(), list = moveList().sort((a, b) => (b.date || '').localeCompare(a.date || '') || ((F.info[b.id] || {}).pos || '').localeCompare((F.info[a.id] || {}).pos || ''));
+  const box = document.getElementById('moveList');
+  box.innerHTML = !list.length ? `<div class="mv-none">${esc(t('mNone'))}</div>` : list.slice(0, moveLimit).map(m => {
+    const inf = F.info[m.id] || {}, warn = [];
+    if(inf.warn === 'noFish') warn.push(t('mWarnNoFish'));
+    if(inf.ask) warn.push(t('mWarnAsk', tankLabel(m.to), inf.destFish > 0 ? fmtN(Math.round(inf.destFish)) : ''));
+    const qty = inf.all ? t('mQtyAll', fmtN(Math.round(inf.k))) : inf.before ? t('mQtyPart', fmtN(inf.k), fmtN(Math.round(inf.before))) : (isNum(m.fish) ? fmtN(m.fish) : '');
+    const meta = [qty, inf.warn === 'recount' ? t('mRecounted', fmtN(Math.round(inf.before))) : '', isNum(m.size) && Number(m.size) > 0 ? fmtF(m.size) + ' g' : '', t(m.after ? 'mRowAfter' : 'mRowBefore'),
+      inf.merge ? (inf.into === null ? t('mMergedUnknown') : t('mMerged', fmtN(Math.round(inf.into || 0)))) : '', inf.cleared ? t('mGone', tankLabel(m.to), fmtN(Math.round(inf.cleared))) : '', m.note || ''].filter(Boolean);
+    return `<div class="mv-row ${m.id === moveEditId ? 'editing' : ''}"><span class="mv-date">${esc(fmtDate(m.date))}</span>
+      <span class="mv-path">${esc(tankLabel(m.from))} → ${esc(tankLabel(m.to))}</span><span class="mv-meta">${esc(meta.join(' · '))}</span>
+      <span class="mv-btns"><button class="rowbtn" type="button" data-mact="edit" data-id="${m.id}">${esc(t('edit'))}</button><button class="rowbtn del" type="button" data-mact="del" data-id="${m.id}">${esc(t('del'))}</button></span>
+      ${warn.length ? `<div class="mv-warn">⚠ ${esc(warn.join(' · '))}</div>` : ''}</div>`;
+  }).join('') + (list.length > moveLimit ? `<button class="btn ghost small more" type="button" data-mact="more">${esc(t('showMore', Math.min(20, list.length - moveLimit)))}</button>` : '');
+  // feed or deaths logged in a tank after its fish were moved out (often a move that happened after feeding)
+  const per = new Map();
+  F.orphans.forEach(o => { if(!(Number(o.e.feedKg) > 0 || Number(o.e.mortality) > 0)) return;
+    const k = o.after || 'none|' + o.e.pond; if(!per.has(k)) per.set(k, {tank:o.e.pond, m:o.after ? o.after.m : null, none:!o.after, from:o.e.date, to:o.e.date, kg:0}); const x = per.get(k);
+    if(o.e.date < x.from) x.from = o.e.date; if(o.e.date > x.to) x.to = o.e.date; x.kg += Number(o.e.feedKg) || 0; });
+  const range = x => x.from === x.to ? fmtDate(x.from) : fmtDate(x.from) + ' – ' + fmtDate(x.to);
+  document.getElementById('moveWarn').innerHTML = [...per.values()].sort((a, b) => a.to.localeCompare(b.to)).slice(-5).reverse().map(x => `<div class="flag warn show">${esc(x.none ? t('orphanNoFish', tankLabel(x.tank), range(x), x.kg > 0 ? fmtF(x.kg) : '')
+    : t(x.m && x.from === x.m.date ? 'orphanWarn' : 'orphanWarn2', tankLabel(x.tank), x.m ? fmtDate(x.m.date) : '—', range(x), x.kg > 0 ? fmtF(x.kg) : ''))}</div>`).join('');
+}
+function resetMoveForm(){
+  moveDraftId = null; moveWhen = 'before'; moveDest = null; mAllTouched = false;
+  document.getElementById('m-all').checked = false;
+  ['m-fish', 'm-size', 'm-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('m-from').value = ''; document.getElementById('m-to').value = '';
+  renderMoveSelects(); movePreview();
+}
+function startMoveEdit(id){
+  const m = moveList().find(x => x.id === id); if(!m) return;
+  moveEditId = id; moveDraftId = null; moveWhen = m.after ? 'after' : 'before';
+  document.getElementById('m-date').value = m.date;
+  renderMoveSelects();
+  document.getElementById('m-from').value = m.from; document.getElementById('m-to').value = m.to;
+  document.getElementById('m-fish').value = isNum(m.fish) && Number(m.fish) > 0 ? m.fish : '';
+  document.getElementById('m-size').value = isNum(m.size) && Number(m.size) > 0 ? m.size : '';
+  document.getElementById('m-note').value = m.note || '';
+  document.getElementById('m-all').checked = m.all !== false; mAllTouched = m.all !== undefined;
+  moveDest = m.clearTo ? 'clear' : m.keepTo ? 'keep' : null;
+  const f = document.getElementById('moveEditFlag'); f.textContent = t('mEditing', tankLabel(m.from), tankLabel(m.to), fmtDate(m.date)); f.classList.add('show');
+  document.getElementById('mCancel').style.display = ''; document.getElementById('mSave').textContent = t('saveEdit');
+  moveFlag('', ''); movePreview(); renderMoves();
+  document.getElementById('moveStep').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function cancelMoveEdit(){
+  moveEditId = null; document.getElementById('moveEditFlag').classList.remove('show');
+  document.getElementById('mCancel').style.display = 'none'; document.getElementById('mSave').textContent = t('mSave');
+  resetMoveForm(); renderMoves();
+}
+async function saveMove(){
+  if(moveSaving) return;
+  movePreview();                                          // tick boxes up to date for these tanks and numbers
+  const d = moveDraft(true);
+  if(!d.date || !d.from || !d.to){ moveFlag('warn', t('needMove')); return; }
+  if(d.from === d.to){ moveFlag('warn', t('pvSame')); return; }
+  const sim = moveSim(d).info[d.id];
+  if(!sim || sim.warn === 'noFish'){ moveFlag('warn', t('pvNoFish', tankLabel(d.from), fmtDate(d.date))); return; }
+  if(sim.warn === 'noCount' && d.fish === ''){ moveFlag('warn', t('pvNoCount', tankLabel(d.from))); document.getElementById('m-fish').focus(); return; }
+  if(!document.getElementById('mDestRow').hidden && !moveDest){ moveFlag('warn', t('needDest', tankLabel(d.to))); document.getElementById('mDestRow').scrollIntoView({behavior:'smooth', block:'center'}); return; }
+  const isEdit = moveEditId !== null;
+  if(!isEdit && moveDraftId === null) moveDraftId = Date.now();       // a retry after a failed save can't add it twice
+  // keep where the moved fish were stocked with the move, in case Tank setup loses it later
+  const rec = Object.assign({}, d, {id: isEdit ? moveEditId : moveDraftId}, sim.src ? {src:sim.src} : {});
+  if(!rec.src) delete rec.src;
+  moveSaving = true; const btn = document.getElementById('mSave'); btn.disabled = true; btn.textContent = t('saving');
+  const res = await commit(() => { stock._moves = moveList().filter(x => x.id !== rec.id).concat([rec]); recomputeAll(); });
+  moveSaving = false; btn.disabled = false;
+  if(!res.ok){ btn.textContent = isEdit ? t('saveEdit') : t('mSave'); moveFlag('crit', failText(res)); toast(failText(res), true); renderEverything(); return; }
+  moveFlag('', ''); btn.textContent = t('mSave');
+  toast(isEdit ? t('mUpdatedToast') : t('mSavedToast', tankLabel(rec.from), tankLabel(rec.to))); beep(1);
+  if(isEdit) cancelMoveEdit(); else resetMoveForm();
+  renderEverything();
+}
+async function delMove(id){
+  const m = moveList().find(x => x.id === id); if(!m) return;
+  if(!confirm(t('confirmDelMove', tankLabel(m.from), tankLabel(m.to), fmtDate(m.date)))) return;
+  if(moveEditId === id) cancelMoveEdit();
+  const res = await commit(() => { stock._moves = moveList().filter(x => x.id !== id); recomputeAll(); });
+  toast(res.ok ? t('mDeletedToast') : failText(res), !res.ok);
+  renderEverything();
+}
+
+function renderEverything(){ renderProgress(); renderTankBar(); updatePreview(); renderSetup(); renderFilters(); renderHistory(); renderStoreFlag(); renderOldFlag(); renderMoveSelects(); movePreview(); renderMoves(); }
+/* refresh in the background so every phone sees the latest counts; typing is never interrupted */
+async function backgroundRefresh(){
+  if(saving || document.hidden || !apiReady()) return;
+  if(!(await loadAll())){ renderStoreFlag(); return; }
+  renderProgress(); renderTankBar(); updatePreview(); renderFilters(); renderHistory(); renderStoreFlag();
+  if(!moveSaving){ renderMoveSelects(); movePreview(); renderMoves(); }
+  renderOldFlag(); document.getElementById('m-date').max = todayLocal();
+  const ae = document.activeElement; if(!(ae && ae.closest && ae.closest('#setupBody'))) renderSetup();
+}
+
+/* ================= wiring ================= */
+async function startApp(){
+  if(getLS(LANG_KEY, 'en') === 'zh') lang = 'zh';
+  applyI18n(); buildWaterFields();
+  document.querySelectorAll('#app input').forEach(i => i.setAttribute('autocomplete', 'off'));
+  document.getElementById('f-date').value = todayLocal();
+  document.getElementById('m-date').value = todayLocal(); document.getElementById('m-date').max = todayLocal();
+  await loadAll();
+  const d = todayLocal(); const next = TANKS.find(n => !logEntries.some(e => e.pond === n && e.date === d)); if(next) selectedTank = next;
+  renderEverything();
+  setInterval(backgroundRefresh, 60000);
+  const retry = setInterval(async () => { if(loaded || !apiReady()){ clearInterval(retry); return; } if(await loadAll()){ clearInterval(retry); renderEverything(); } }, 10000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) backgroundRefresh(); });
+
+  document.getElementById('picker').addEventListener('click', e => { const b = e.target.closest('[data-tank]'); if(!b) return;
+    selectedTank = b.dataset.tank; draftId = null; if(editingId === null) moveSideSel = null; document.getElementById('f-day').dataset.touched = ''; if(editingId === null){ document.getElementById('f-feedpct').dataset.touched = ''; document.getElementById('f-feedpct').value = ''; }
+    renderProgress(); renderTankBar(); updatePreview(); });
+  document.getElementById('f-date').addEventListener('change', () => { draftId = null; moveSideSel = null; document.getElementById('f-day').dataset.touched = ''; renderProgress(); renderTankBar(); updatePreview(); });
+  document.getElementById('mSide').addEventListener('click', e => { const b = e.target.closest('[data-side]'); if(!b) return; moveSideSel = b.dataset.side; updatePreview(); });
+  ['f-totalfish','f-mortality','f-avgsize','f-feedkg1','f-feedkg2','f-feedkg3','f-feedkg4'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+  document.getElementById('f-feedpct').addEventListener('input', e => { e.target.dataset.touched = 'true'; updatePreview(); });
+  document.getElementById('f-day').addEventListener('input', e => { e.target.dataset.touched = 'true'; });
+  document.getElementById('splitBtn').addEventListener('click', () => {
+    const s = formState(), pct = Number(val('f-feedpct')) || suggestFeedPct(s.sizeForMath) || 0;
+    if(!s.biomass || !pct) return;
+    const q = Math.round(s.biomass * pct / 100 / 4 * 100) / 100;
+    [1,2,3,4].forEach(i => document.getElementById('f-feedkg'+i).value = q);
+    updatePreview();
+  });
+  document.getElementById('saveBtn').addEventListener('click', save);
+  document.getElementById('cancelBtn').addEventListener('click', cancelEdit);
+  document.getElementById('m-date').addEventListener('change', () => { moveDraftId = null; if(moveEditId === null) moveDest = null; renderMoveSelects(); movePreview(); });
+  ['m-from', 'm-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { moveDraftId = null; moveDest = null; moveFlag('', ''); movePreview(); }));
+  let mvTimer = null;                                       // typing a number: work it out once the typing pauses
+  ['m-fish', 'm-size'].forEach(id => document.getElementById(id).addEventListener('input', () => { clearTimeout(mvTimer); mvTimer = setTimeout(movePreview, 250); }));
+  document.getElementById('m-all').addEventListener('change', () => { mAllTouched = true; movePreview(); });
+  document.getElementById('m-dest').addEventListener('click', e => { const b = e.target.closest('[data-dest]'); if(!b) return; moveDest = b.dataset.dest; moveFlag('', ''); movePreview(); });
+  document.getElementById('m-when').addEventListener('click', e => { const b = e.target.closest('[data-when]'); if(!b) return; moveWhen = b.dataset.when; renderMoveSelects(); movePreview(); });
+  document.getElementById('mSave').addEventListener('click', saveMove);
+  document.getElementById('mCancel').addEventListener('click', cancelMoveEdit);
+  document.getElementById('moveList').addEventListener('click', e => { const b = e.target.closest('[data-mact]'); if(!b) return;
+    if(b.dataset.mact === 'more'){ moveLimit += 20; renderMoves(); return; }
+    const id = Number(b.dataset.id); if(b.dataset.mact === 'edit') startMoveEdit(id); else delMove(id); });
+  document.getElementById('setupBody').addEventListener('change', e => { if(e.target.dataset && e.target.dataset.tank) onSetupChange(e); });
+  document.getElementById('setupBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-fix], [data-fix-save], [data-fix-cancel]'); if(!b) return;
+    if(b.dataset.fix){ fixTank = b.dataset.fix; setupFlag(''); renderSetup(); const d = document.getElementById('fixDate'); if(d) d.focus(); }
+    else if(b.dataset.fixSave) saveFix(b.dataset.fixSave);
+    else { fixTank = null; setupFlag(''); renderSetup(); } });
+  document.getElementById('setupBody').addEventListener('focusin', onSetupFocus);
+  document.getElementById('setupBody').addEventListener('focusout', onSetupBlur);
+  document.getElementById('filterTank').addEventListener('change', () => { histLimit = 60; renderHistory(); });
+  document.getElementById('filterDate').addEventListener('change', () => { histLimit = 60; renderHistory(); });
+  document.getElementById('logBody').addEventListener('click', e => { if(e.target.id === 'moreBtn'){ histLimit += 60; renderHistory(); return; } const b = e.target.closest('[data-act]'); if(!b) return;
+    const id = Number(b.dataset.id); if(b.dataset.act === 'edit') startEdit(id); else del(id); });
+  document.getElementById('langToggle').addEventListener('click', () => {
+    lang = lang === 'en' ? 'zh' : 'en'; setLS(LANG_KEY, lang);
+    const keep = {}; WATER.forEach(p => keep[p.id] = val(p.id));
+    applyI18n(); buildWaterFields(); WATER.forEach(p => { document.getElementById(p.id).value = keep[p.id]; checkWater(p); });
+    setSync(document.getElementById('syncStatus').className.split(' ')[1]);
+    if(editingId !== null){ const e = logEntries.find(x => x.id === editingId); if(e) document.getElementById('editFlag').textContent = t('editing', tankLabel(e.pond), fmtDate(e.date)); }
+    if(moveEditId !== null){ const m = moveList().find(x => x.id === moveEditId); if(m) document.getElementById('moveEditFlag').textContent = t('mEditing', tankLabel(m.from), tankLabel(m.to), fmtDate(m.date)); document.getElementById('mSave').textContent = t('saveEdit'); }
+    renderEverything();
+  });
+  document.getElementById('soundBtn').addEventListener('click', () => {
+    if(!soundEnabled){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); soundEnabled = true; beep(1); } else soundEnabled = false;
+    document.getElementById('soundText').textContent = soundEnabled ? t('soundOn') : t('soundOff');
+  });
+}
+
+/* ================= access gate ================= */
+function openApp(){ document.getElementById('gate').style.display = 'none'; document.getElementById('app').style.display = 'block'; startApp(); }
+function tryGate(){ const i = document.getElementById('gateInput'); if(i.value === ACCESS_CODE){ setLS(ACCESS_KEY, 'true'); openApp(); } else { document.getElementById('gateErr').textContent = t('gateErr'); i.value = ''; i.focus(); } }
+if(getLS(LANG_KEY, 'en') === 'zh') lang = 'zh';
+applyI18n();
+document.getElementById('gateBtn').addEventListener('click', tryGate);
+document.getElementById('gateInput').addEventListener('keydown', e => { if(e.key === 'Enter') tryGate(); });
+if(getLS(ACCESS_KEY, '') === 'true') openApp(); else document.getElementById('gateInput').focus();
+</script>
+</body>
+</html>
